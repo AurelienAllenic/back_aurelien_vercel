@@ -18,6 +18,7 @@ app.use("/api", emailRoutes);
 app.get("/", (req, res) => {
   console.log("Route / appelée !");
   res.send("Hello World!");
+  console.log("✅ Réponse envoyée !");
 });
 
 module.exports = app; // Ne pas démarrer le serveur ici

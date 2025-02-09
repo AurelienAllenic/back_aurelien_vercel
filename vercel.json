@@ -1,8 +1,8 @@
 {
+  "regions": ["cdg1"],
   "functions": {
     "api/index.js": {
-      "runtime": "nodejs18.x",
-      "regions": ["cdg1"]
+      "runtime": "nodejs18.x"
     }
   },
   "routes": [

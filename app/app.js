@@ -15,6 +15,9 @@ app.use(bodyParser.json());
 app.use("/api", emailRoutes);
 
 // Test route
-app.get("/", (req, res) => res.send("Hello World!"));
+app.get("/", (req, res) => {
+  console.log("Route / appelée !");
+  res.send("Hello World!");
+});
 
 module.exports = app; // Ne pas démarrer le serveur ici

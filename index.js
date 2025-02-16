@@ -5,7 +5,6 @@ const corsConfig = require("./config/corsConfig");
 const limiter = require("./config/rateLimiter");
 const emailRoutes = require("./routes/emailRoutes");
 const counterRoutes = require("./routes/counterRoutes");
-const emailRoutes = require("./routes/emailRoutes");
 const authRoutes = require("./routes/authRoutes");
 const paroRoutes = require("./routes/paroRoutes");
 

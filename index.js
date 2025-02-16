@@ -4,6 +4,10 @@ const connectDB = require("./config/db");
 const corsConfig = require("./config/corsConfig");
 const limiter = require("./config/rateLimiter");
 const emailRoutes = require("./routes/emailRoutes");
+const counterRoutes = require("./routes/counterRoutes");
+const emailRoutes = require("./routes/emailRoutes");
+const authRoutes = require("./routes/authRoutes");
+const paroRoutes = require("./routes/paroRoutes");
 
 require("dotenv").config();
 const app = express();
@@ -19,6 +23,10 @@ app.use(emailRoutes);
 app.get("/", (req, res) => {
   res.status(200).json("Welcome to the main route");
 });
+app.use(counterRoutes);
+app.use(emailRoutes);
+app.use(paroRoutes);
+app.use("/auth", authRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

@@ -41,7 +41,7 @@ router.post(
   auth,
   smartLinkFolderController.addFolder
 );
-router.get("/smart-links-folders", findAllFolders.findAllFolders);
+router.get("/smart-links-folders", smartLinkFolderController.findAllFolders);
 router.get("/smart-links-folder/:id", smartLinkFolderController.findOneFolder);
 router.put(
   "/smart-links-folder/:id",

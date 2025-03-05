@@ -36,15 +36,18 @@ exports.addFolder = async (req, res) => {
 // ✅ Récupérer tous les dossiers
 exports.findAllFolders = async (req, res) => {
   try {
-    const folders = await Folder.find().populate("parentFolder"); // Récupère aussi le dossier parent
+    const folders = await Folder.find().populate({
+      path: "parentFolder",
+      options: { strictPopulate: false }, // ✅ Ignore les parents inexistants
+    });
+
     res.status(200).json({ message: "Liste des dossiers", data: folders });
   } catch (error) {
-    res
-      .status(400)
-      .json({
-        message: "Erreur lors de la récupération des dossiers",
-        error: error.message,
-      });
+    console.error("❌ Erreur lors de la récupération des dossiers :", error);
+    res.status(400).json({
+      message: "Erreur lors de la récupération des dossiers",
+      error: error.message,
+    });
   }
 };
 
@@ -64,12 +67,10 @@ exports.findOneFolder = async (req, res) => {
 
     res.status(200).json({ message: "Dossier trouvé", data: folder });
   } catch (error) {
-    res
-      .status(400)
-      .json({
-        message: "Erreur lors de la récupération du dossier",
-        error: error.message,
-      });
+    res.status(400).json({
+      message: "Erreur lors de la récupération du dossier",
+      error: error.message,
+    });
   }
 };
 
@@ -111,12 +112,10 @@ exports.updateFolder = async (req, res) => {
       .json({ message: "Dossier mis à jour avec succès", data: updatedFolder });
   } catch (error) {
     console.error("Erreur lors de la mise à jour :", error);
-    res
-      .status(400)
-      .json({
-        message: "Erreur lors de la mise à jour du dossier",
-        error: error.message,
-      });
+    res.status(400).json({
+      message: "Erreur lors de la mise à jour du dossier",
+      error: error.message,
+    });
   }
 };
 
@@ -134,12 +133,10 @@ exports.deleteFolder = async (req, res) => {
     const subfolders = await Folder.find({ parentFolder: id });
 
     if (subfolders.length > 0) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Impossible de supprimer ce dossier car il contient des sous-dossiers.",
-        });
+      return res.status(400).json({
+        message:
+          "Impossible de supprimer ce dossier car il contient des sous-dossiers.",
+      });
     }
 
     const result = await Folder.deleteOne({ _id: id });
@@ -151,11 +148,9 @@ exports.deleteFolder = async (req, res) => {
     res.status(200).json({ message: "Dossier supprimé avec succès." });
   } catch (error) {
     console.error("Erreur lors de la suppression du dossier : ", error);
-    res
-      .status(400)
-      .json({
-        message: "Erreur lors de la suppression du dossier",
-        error: error.message,
-      });
+    res.status(400).json({
+      message: "Erreur lors de la suppression du dossier",
+      error: error.message,
+    });
   }
 };

@@ -7,6 +7,11 @@ const FolderSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    parentFolder: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Folder",
+      default: null,
+    },
     smartLinks: [
       {
         type: mongoose.Schema.Types.ObjectId,

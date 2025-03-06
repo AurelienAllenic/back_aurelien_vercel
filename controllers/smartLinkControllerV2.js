@@ -1,6 +1,7 @@
 const SmartLinkV2 = require("../models/SmartLinkV2");
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
+const Folder = require("../models/Folder");
 
 // Ajouter un lien
 exports.addSmartLink = async (req, res) => {

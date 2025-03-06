@@ -118,22 +118,37 @@ exports.updateSmartLink = async (req, res) => {
 
 exports.deleteSmartLink = async (req, res) => {
   const { id } = req.params;
-  console.log("ID reçu pour suppression : ", id);
+  console.log("📤 Suppression du SmartLink :", id);
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "ID invalide." });
   }
 
   try {
+    // ✅ Récupérer le SmartLink pour voir s'il est dans un dossier
+    const smartLink = await SmartLinkV2.findById(id);
+    if (!smartLink) {
+      return res.status(404).json({ message: "SmartLink non trouvé." });
+    }
+
+    // ✅ Si le SmartLink est dans un dossier, le retirer du champ `smartLinks`
+    if (smartLink.folder) {
+      await Folder.findByIdAndUpdate(smartLink.folder, {
+        $pull: { smartLinks: id }, // Retire l'ID du SmartLink de la liste des SmartLinks du dossier
+      });
+      console.log(`✅ SmartLink ${id} supprimé du dossier ${smartLink.folder}`);
+    }
+
+    // ✅ Supprimer le SmartLink de la base de données
     const result = await SmartLinkV2.deleteOne({ _id: id });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: "SmartLink non trouvé." });
     }
 
-    res.status(200).json({ message: "SmartLink supprimé avec succès." });
+    res.status(200).json({ message: "✅ SmartLink supprimé avec succès." });
   } catch (error) {
-    console.error("Erreur lors de la suppression du SmartLink : ", error);
+    console.error("❌ Erreur lors de la suppression du SmartLink :", error);
     res.status(400).json({
       message: "Erreur lors de la suppression du SmartLink",
       error: error.message,

@@ -93,7 +93,7 @@ exports.updateSmartLink = async (req, res) => {
         .json({ message: "Aucune donnée à mettre à jour." });
     }
 
-    const updatedSmartLink = await SmartLink.findOneAndUpdate(
+    const updatedSmartLink = await SmartLinkV2.findOneAndUpdate(
       { _id: id },
       { $set: updateData },
       { new: true, runValidators: true }

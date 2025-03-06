@@ -36,10 +36,7 @@ exports.addFolder = async (req, res) => {
 // ✅ Récupérer tous les dossiers
 exports.findAllFolders = async (req, res) => {
   try {
-    const folders = await Folder.find().populate({
-      path: "parentFolder",
-      options: { strictPopulate: false }, // ✅ Ignore les parents inexistants
-    });
+    const folders = await Folder.find().populate("smartLinks");
 
     res.status(200).json({ message: "Liste des dossiers", data: folders });
   } catch (error) {

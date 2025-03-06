@@ -8,30 +8,30 @@ exports.addSmartLink = async (req, res) => {
   const { title, linkType, titleType, modifiedTitle, link, folder } = req.body;
 
   if (!title || !linkType || !titleType || !modifiedTitle || !link) {
-    console.log("❌ Champs manquants");
     return res
       .status(400)
       .json({ message: "Tous les champs sont requis, sauf le dossier." });
   }
 
   try {
-    const newSmartLinkData = {
+    const newSmartLink = new SmartLinkV2({
       id: uuidv4(),
       title,
       linkType,
       titleType,
       modifiedTitle,
       link,
-    };
+      folder: folder && mongoose.Types.ObjectId.isValid(folder) ? folder : null,
+    });
 
-    if (folder && mongoose.Types.ObjectId.isValid(folder)) {
-      newSmartLinkData.folder = new mongoose.Types.ObjectId(folder);
-    } else {
-      newSmartLinkData.folder = null;
-    }
-
-    const newSmartLink = new SmartLinkV2(newSmartLinkData);
     await newSmartLink.save();
+
+    // ✅ Ajout du SmartLink au dossier s'il existe
+    if (folder) {
+      await Folder.findByIdAndUpdate(folder, {
+        $push: { smartLinks: newSmartLink._id },
+      });
+    }
 
     res
       .status(201)
@@ -50,12 +50,10 @@ exports.findAllSmartLinks = async (req, res) => {
     const smartLinks = await SmartLinkV2.find();
     res.status(200).json({ message: "Liste des smartLinks", data: smartLinks });
   } catch (error) {
-    res
-      .status(400)
-      .json({
-        message: "Erreur lors de la récupération des smartLinks",
-        error: error.message,
-      });
+    res.status(400).json({
+      message: "Erreur lors de la récupération des smartLinks",
+      error: error.message,
+    });
   }
 };
 
@@ -70,12 +68,10 @@ exports.findOneSmartLink = async (req, res) => {
 
     res.status(200).json({ message: "smartLink trouvé", data: smartLink });
   } catch (error) {
-    res
-      .status(400)
-      .json({
-        message: "Erreur lors de la récupération du smartLink",
-        error: error.message,
-      });
+    res.status(400).json({
+      message: "Erreur lors de la récupération du smartLink",
+      error: error.message,
+    });
   }
 };
 
@@ -106,20 +102,16 @@ exports.updateSmartLink = async (req, res) => {
       return res.status(404).json({ message: "SmartLink non trouvé." });
     }
 
-    res
-      .status(200)
-      .json({
-        message: "SmartLink mis à jour avec succès",
-        data: updatedSmartLink,
-      });
+    res.status(200).json({
+      message: "SmartLink mis à jour avec succès",
+      data: updatedSmartLink,
+    });
   } catch (error) {
     console.error("Erreur lors de la mise à jour :", error);
-    res
-      .status(400)
-      .json({
-        message: "Erreur lors de la mise à jour du SmartLink",
-        error: error.message,
-      });
+    res.status(400).json({
+      message: "Erreur lors de la mise à jour du SmartLink",
+      error: error.message,
+    });
   }
 };
 
@@ -141,11 +133,9 @@ exports.deleteSmartLink = async (req, res) => {
     res.status(200).json({ message: "SmartLink supprimé avec succès." });
   } catch (error) {
     console.error("Erreur lors de la suppression du SmartLink : ", error);
-    res
-      .status(400)
-      .json({
-        message: "Erreur lors de la suppression du SmartLink",
-        error: error.message,
-      });
+    res.status(400).json({
+      message: "Erreur lors de la suppression du SmartLink",
+      error: error.message,
+    });
   }
 };

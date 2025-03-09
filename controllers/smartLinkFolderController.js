@@ -119,21 +119,28 @@ exports.updateFolder = async (req, res) => {
 // ✅ Supprimer un dossier
 exports.deleteFolder = async (req, res) => {
   const { id } = req.params;
+  const { deleteSmartLinks } = req.body;
+
   console.log("ID reçu pour suppression : ", id);
+  console.log("Supprimer les SmartLinks associés ? ", deleteSmartLinks);
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "ID invalide." });
   }
 
   try {
-    // Vérifier si le dossier a des sous-dossiers avant suppression
     const subfolders = await Folder.find({ parentFolder: id });
-
     if (subfolders.length > 0) {
       return res.status(400).json({
         message:
           "Impossible de supprimer ce dossier car il contient des sous-dossiers.",
       });
+    }
+
+    if (!deleteSmartLinks) {
+      await SmartLink.updateMany({ folder: id }, { $unset: { folder: 1 } });
+    } else {
+      await SmartLink.deleteMany({ folder: id });
     }
 
     const result = await Folder.deleteOne({ _id: id });

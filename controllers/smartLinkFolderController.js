@@ -1,5 +1,6 @@
 const Folder = require("../models/Folder");
 const mongoose = require("mongoose");
+const SmartLinkV2 = require("../models/SmartLinkV2");
 
 // ✅ Ajouter un dossier
 exports.addFolder = async (req, res) => {
@@ -138,9 +139,9 @@ exports.deleteFolder = async (req, res) => {
     }
 
     if (!deleteSmartLinks) {
-      await SmartLink.updateMany({ folder: id }, { $unset: { folder: 1 } });
+      await SmartLinkV2.updateMany({ folder: id }, { $unset: { folder: 1 } });
     } else {
-      await SmartLink.deleteMany({ folder: id });
+      await SmartLinkV2.deleteMany({ folder: id });
     }
 
     const result = await Folder.deleteOne({ _id: id });

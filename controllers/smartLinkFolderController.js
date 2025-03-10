@@ -5,11 +5,9 @@ const SmartLinkV2 = require("../models/SmartLinkV2");
 // ✅ Ajouter un dossier
 exports.addFolder = async (req, res) => {
   console.log("📥 Données reçues :", req.body);
-
   const { title, parentFolder } = req.body;
 
   if (!title) {
-    console.log("❌ Titre du dossier manquant");
     return res.status(400).json({ message: "Le titre du dossier est requis." });
   }
 
@@ -22,6 +20,14 @@ exports.addFolder = async (req, res) => {
     });
 
     await newFolder.save();
+
+    // ✅ Si c'est un sous-dossier, on met à jour le dossier parent pour l'ajouter comme enfant
+    if (parentFolder) {
+      await Folder.findByIdAndUpdate(parentFolder, {
+        $push: { children: newFolder._id },
+      });
+    }
+
     res
       .status(201)
       .json({ message: "✅ Dossier créé avec succès", data: newFolder });

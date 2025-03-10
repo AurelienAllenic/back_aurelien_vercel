@@ -1,61 +1,44 @@
 const SocialLinks = require("../models/SocialLinks");
 
-// ✅ Récupérer les liens sociaux (public, sans authentification)
+// ✅ Récupérer les liens sociaux (ne nécessite pas d'authentification)
 exports.getSocialLinks = async (req, res) => {
   try {
-    const socialLinks = await SocialLinks.findOne(); // On récupère les liens sociaux globaux
-
+    const socialLinks = await SocialLinks.findOne();
     if (!socialLinks) {
-      return res.status(404).json({ message: "Aucun lien social trouvé" });
+      return res.status(200).json({
+        youtube: "",
+        instagram: "",
+        facebook: "",
+        tiktok: "",
+        spotify: "",
+        deezer: "",
+        appleMusic: "",
+        amazonMusic: "",
+        soundcloud: "",
+      }); // Renvoie un objet vide si aucun trouvé
     }
-
     res.status(200).json(socialLinks);
   } catch (error) {
-    console.error(
-      "❌ Erreur lors de la récupération des liens sociaux :",
-      error
-    );
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
 
-// ✅ Modifier les liens sociaux (auth requis)
+// ✅ Mettre à jour les liens sociaux
 exports.updateSocialLinks = async (req, res) => {
   try {
-    const {
-      youtube,
-      instagram,
-      facebook,
-      tiktok,
-      spotify,
-      deezer,
-      appleMusic,
-      amazonMusic,
-      soundcloud,
-    } = req.body;
+    let socialLinks = await SocialLinks.findOne();
 
-    const updatedLinks = await SocialLinks.findOneAndUpdate(
-      {}, // On met à jour le seul document existant
-      {
-        youtube,
-        instagram,
-        facebook,
-        tiktok,
-        spotify,
-        deezer,
-        appleMusic,
-        amazonMusic,
-        soundcloud,
-      },
-      { new: true, upsert: true } // `upsert: true` crée le document s'il n'existe pas encore
-    );
+    if (!socialLinks) {
+      // Crée un nouvel objet si aucun lien n'existe
+      socialLinks = new SocialLinks(req.body);
+    } else {
+      // Met à jour les liens existants
+      Object.assign(socialLinks, req.body);
+    }
 
-    res.status(200).json(updatedLinks);
+    await socialLinks.save();
+    res.status(200).json({ message: "Liens sociaux mis à jour avec succès !" });
   } catch (error) {
-    console.error(
-      "❌ Erreur lors de la mise à jour des liens sociaux :",
-      error
-    );
     res.status(500).json({ error: "Erreur serveur" });
   }
 };

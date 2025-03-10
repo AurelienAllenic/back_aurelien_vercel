@@ -6,6 +6,7 @@ const smartLinkV2Controller = require("../controllers/smartLinkControllerV2");
 const smartLinkFolderController = require("../controllers/smartLinkFolderController");
 const auth = require("../middlewares/authMiddleware");
 const { uploadImage } = require("../middlewares/multerMiddleware");
+const socialLinksController = require("../controllers/socialLinksController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -33,6 +34,11 @@ router.delete(
   auth,
   smartLinkV2Controller.deleteSmartLink
 );
+
+// SOCIAL LINKS
+
+router.get("/social-links", socialLinksController.getSocialLinks);
+router.put("/social-links", auth, socialLinksController.updateSocialLinks);
 
 // FOLDERS ROUTES
 

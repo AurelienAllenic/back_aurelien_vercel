@@ -80,7 +80,7 @@ exports.updateSmartLink = async (req, res) => {
   const { id } = req.params;
   const updateData = req.body;
 
-  console.log("📥 Données reçues pour mise à jour :", updateData); // ⬅️ LOG AVANT MISE À JOUR
+  console.log("📥 Données reçues pour mise à jour :", updateData);
 
   try {
     if (!id) {
@@ -93,26 +93,44 @@ exports.updateSmartLink = async (req, res) => {
         .json({ message: "Aucune donnée à mettre à jour." });
     }
 
-    // ✅ Convertir parentFolder en ObjectId s'il existe
-    if (updateData.parentFolder) {
-      updateData.parentFolder = new mongoose.Types.ObjectId(
-        updateData.parentFolder
-      );
+    // ✅ Convertir folder et parentFolder en ObjectId
+    if (updateData.folder) {
+      updateData.folder = new mongoose.Types.ObjectId(updateData.folder);
     }
 
+    // ✅ Met à jour le SmartLink
     const updatedSmartLink = await SmartLinkV2.findOneAndUpdate(
       { _id: id },
       { $set: updateData },
       { new: true, runValidators: true }
-    )
-      .populate("folder")
-      .populate("folder.parentFolder"); // ✅ Vérifie que le parentFolder est bien récupéré
+    ).populate("folder");
 
     if (!updatedSmartLink) {
       return res.status(404).json({ message: "SmartLink non trouvé." });
     }
 
-    console.log("✅ SmartLink mis à jour :", updatedSmartLink); // ⬅️ LOG APRÈS MISE À JOUR
+    // ✅ Met à jour le parentFolder du dossier si modifié
+    if (updateData.parentFolder) {
+      console.log(
+        `🔄 Mise à jour du parentFolder du dossier ${updateData.folder}`
+      );
+      await Folder.findOneAndUpdate(
+        { _id: updateData.folder },
+        {
+          $set: {
+            parentFolder: new mongoose.Types.ObjectId(updateData.parentFolder),
+          },
+        },
+        { new: true, runValidators: true }
+      );
+    }
+
+    // ✅ Vérifie si le parentFolder est bien mis à jour
+    const updatedFolder = await Folder.findById(updateData.folder).populate(
+      "parentFolder"
+    );
+
+    console.log("✅ Dossier mis à jour avec parentFolder :", updatedFolder);
 
     res.status(200).json({
       message: "SmartLink mis à jour avec succès",

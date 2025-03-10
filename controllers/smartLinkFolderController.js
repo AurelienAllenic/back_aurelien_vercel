@@ -41,9 +41,13 @@ exports.addFolder = async (req, res) => {
 };
 
 // ✅ Récupérer tous les dossiers
+// ✅ Récupérer tous les dossiers avec leurs relations
 exports.findAllFolders = async (req, res) => {
   try {
-    const folders = await Folder.find().populate("smartLinks");
+    const folders = await Folder.find()
+      .populate("smartLinks") // Populate les SmartLinks associés
+      .populate("parentFolder") // Populate le dossier parent
+      .populate("children"); // Populate les sous-dossiers
 
     res.status(200).json({ message: "Liste des dossiers", data: folders });
   } catch (error) {

@@ -127,42 +127,53 @@ exports.updateFolder = async (req, res) => {
   }
 };
 
-// ✅ Supprimer un dossier
 exports.deleteFolder = async (req, res) => {
   const { id } = req.params;
   const { deleteSmartLinks } = req.body;
 
-  console.log("ID reçu pour suppression : ", id);
-  console.log("Supprimer les SmartLinks associés ? ", deleteSmartLinks);
+  console.log("📥 Suppression du dossier :", id);
+  console.log("📌 Supprimer les SmartLinks associés ?", deleteSmartLinks);
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "ID invalide." });
   }
 
   try {
-    const subfolders = await Folder.find({ parentFolder: id });
-    if (subfolders.length > 0) {
-      return res.status(400).json({
-        message:
-          "Impossible de supprimer ce dossier car il contient des sous-dossiers.",
-      });
-    }
+    // 🔄 Récupérer tous les sous-dossiers récursivement
+    const getAllSubfolders = async (folderId) => {
+      let subfolders = await Folder.find({ parentFolder: folderId });
+      for (const subfolder of subfolders) {
+        const nestedSubfolders = await getAllSubfolders(subfolder._id);
+        subfolders = subfolders.concat(nestedSubfolders);
+      }
+      return subfolders;
+    };
 
+    const subfolders = await getAllSubfolders(id);
+    const allFolderIds = [id, ...subfolders.map((folder) => folder._id)];
+
+    console.log("📌 Dossiers supprimés :", allFolderIds);
+
+    // 🗑 Supprimer ou détacher les SmartLinks
     if (!deleteSmartLinks) {
-      await SmartLinkV2.updateMany({ folder: id }, { $unset: { folder: 1 } });
+      await SmartLinkV2.updateMany(
+        { folder: { $in: allFolderIds } },
+        { $unset: { folder: 1 } }
+      );
+      console.log("✅ SmartLinks détachés des dossiers supprimés.");
     } else {
-      await SmartLinkV2.deleteMany({ folder: id });
+      await SmartLinkV2.deleteMany({ folder: { $in: allFolderIds } });
+      console.log("✅ SmartLinks supprimés avec leurs dossiers.");
     }
 
-    const result = await Folder.deleteOne({ _id: id });
+    // 🗑 Supprimer tous les sous-dossiers + le dossier cible
+    await Folder.deleteMany({ _id: { $in: allFolderIds } });
 
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ message: "Dossier non trouvé." });
-    }
-
-    res.status(200).json({ message: "Dossier supprimé avec succès." });
+    res
+      .status(200)
+      .json({ message: "Dossier et sous-dossiers supprimés avec succès." });
   } catch (error) {
-    console.error("Erreur lors de la suppression du dossier : ", error);
+    console.error("❌ Erreur lors de la suppression du dossier :", error);
     res.status(400).json({
       message: "Erreur lors de la suppression du dossier",
       error: error.message,

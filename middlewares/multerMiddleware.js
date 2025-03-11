@@ -22,10 +22,16 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: 20 * 1024 * 1024 }, // Limite à 20 Mo
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/jpg"];
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/jpg",
+      "image/webp",
+    ];
     if (!allowedTypes.includes(file.mimetype)) {
       const error = new Error(
-        "Seuls les formats JPEG, PNG et GIF sont autorisés."
+        "Seuls les formats JPEG, PNG, GIF et WEBP sont autorisés."
       );
       error.code = "INVALID_FILE_TYPE";
       return cb(error, false);

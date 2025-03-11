@@ -7,6 +7,7 @@ const smartLinkFolderController = require("../controllers/smartLinkFolderControl
 const auth = require("../middlewares/authMiddleware");
 const { uploadImage } = require("../middlewares/multerMiddleware");
 const socialLinksController = require("../controllers/socialLinksController");
+const bioController = require("../controllers/bioController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -39,6 +40,10 @@ router.delete(
 
 router.get("/social-links", socialLinksController.getSocialLinks);
 router.put("/social-links", auth, socialLinksController.updateSocialLinks);
+
+// BIO ROUTES
+router.get("/bio", bioController.getBio);
+router.put("/bio", auth, uploadImage, bioController.updateBio);
 
 // FOLDERS ROUTES
 

@@ -6,6 +6,8 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+  chunk_size: 6000000, // 6MB pour diviser les gros fichiers
 });
 
 // ✅ Récupérer la bio (GET)
@@ -38,8 +40,14 @@ exports.updateBio = async (req, res) => {
       console.log("📤 Upload de l'image sur Cloudinary...");
       try {
         const cloudinaryResult = await cloudinary.uploader.upload(
-          req.file.path
+          req.file.path,
+          {
+            quality: "auto:low", // Compression automatique
+            fetch_format: "auto", // Convertit l'image au meilleur format
+            folder: "bio", // Stockage dans un dossier spécifique
+          }
         );
+
         console.log("✅ Image téléchargée sur Cloudinary :", cloudinaryResult);
         newImageUrl = cloudinaryResult.secure_url;
       } catch (error) {

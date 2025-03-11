@@ -94,20 +94,25 @@ exports.updateSmartLink = async (req, res) => {
         .json({ message: "Aucune donnée à mettre à jour." });
     }
 
-    // ✅ Vérifie si le SmartLink est en V1
-    const existingSmartLink = await SmartLink.findById(id);
+    // ✅ Vérifier si l'ID appartient à un SmartLink V2 ou V1
+    let existingSmartLink = await SmartLinkV2.findById(id);
+
     if (!existingSmartLink) {
-      return res.status(404).json({ message: "SmartLink non trouvé." });
+      existingSmartLink = await SmartLink.findById(id);
+
+      if (!existingSmartLink) {
+        return res.status(404).json({ message: "SmartLink non trouvé." });
+      }
     }
 
-    // ✅ Si un dossier est ajouté et que c'est un V1 -> supprimer et recréer en V2
-    if (updateData.folder && !existingSmartLink.isV2) {
+    // ✅ Si c'est un SmartLink V1 et un dossier est ajouté -> Supprimer et recréer en V2
+    if (existingSmartLink instanceof SmartLink && updateData.folder) {
       console.log("🔄 Suppression du SmartLink V1 et création en V2...");
 
-      // 1️⃣ Suppression du SmartLink V1
+      // 1️⃣ Supprimer le SmartLink V1
       await SmartLink.findByIdAndDelete(id);
 
-      // 2️⃣ Création du nouveau SmartLink V2 avec **les nouvelles données de updateData**
+      // 2️⃣ Créer un SmartLink V2 avec les nouvelles données
       const newSmartLinkV2 = new SmartLinkV2({
         id: uuidv4(),
         title: updateData.title || existingSmartLink.title,
@@ -116,7 +121,7 @@ exports.updateSmartLink = async (req, res) => {
         modifiedTitle:
           updateData.modifiedTitle || existingSmartLink.modifiedTitle,
         link: updateData.link || existingSmartLink.link,
-        folder: new mongoose.Types.ObjectId(updateData.folder), // Le nouveau dossier
+        folder: new mongoose.Types.ObjectId(updateData.folder), // Associer au nouveau dossier
       });
 
       await newSmartLinkV2.save();
@@ -127,7 +132,7 @@ exports.updateSmartLink = async (req, res) => {
       });
     }
 
-    // ✅ Si pas de conversion en V2, mise à jour classique
+    // ✅ Si c'est déjà un SmartLink V2, mise à jour classique
     if (updateData.folder) {
       updateData.folder = new mongoose.Types.ObjectId(updateData.folder);
     }
@@ -142,11 +147,12 @@ exports.updateSmartLink = async (req, res) => {
       return res.status(404).json({ message: "SmartLink non trouvé." });
     }
 
-    // ✅ Met à jour le parentFolder si modifié
+    // ✅ Si un parentFolder est modifié, mise à jour du dossier
     if (updateData.parentFolder) {
       console.log(
         `🔄 Mise à jour du parentFolder du dossier ${updateData.folder}`
       );
+
       await Folder.findOneAndUpdate(
         { _id: updateData.folder },
         {

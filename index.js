@@ -16,7 +16,8 @@ connectDB();
 app.use(corsConfig);
 app.options("*", corsConfig);
 app.use(limiter);
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: "10mb" }));
+app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
 app.use(emailRoutes);
 
 app.get("/", (req, res) => {

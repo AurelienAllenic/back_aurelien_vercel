@@ -93,12 +93,44 @@ exports.updateSmartLink = async (req, res) => {
         .json({ message: "Aucune donnée à mettre à jour." });
     }
 
-    // ✅ Convertir folder et parentFolder en ObjectId
+    // ✅ Vérifie si le SmartLink est en V1
+    const existingSmartLink = await SmartLink.findById(id);
+    if (!existingSmartLink) {
+      return res.status(404).json({ message: "SmartLink non trouvé." });
+    }
+
+    // ✅ Si un dossier est ajouté et que c'est un V1 -> supprimer et recréer en V2
+    if (updateData.folder && !existingSmartLink.isV2) {
+      console.log("🔄 Suppression du SmartLink V1 et création en V2...");
+
+      // 1️⃣ Suppression du SmartLink V1
+      await SmartLink.findByIdAndDelete(id);
+
+      // 2️⃣ Création du nouveau SmartLink V2 avec **les nouvelles données de updateData**
+      const newSmartLinkV2 = new SmartLinkV2({
+        id: uuidv4(),
+        title: updateData.title || existingSmartLink.title,
+        linkType: updateData.linkType || existingSmartLink.linkType,
+        titleType: updateData.titleType || existingSmartLink.titleType,
+        modifiedTitle:
+          updateData.modifiedTitle || existingSmartLink.modifiedTitle,
+        link: updateData.link || existingSmartLink.link,
+        folder: new mongoose.Types.ObjectId(updateData.folder), // Le nouveau dossier
+      });
+
+      await newSmartLinkV2.save();
+
+      return res.status(201).json({
+        message: "✅ SmartLink converti en V2 avec succès",
+        data: newSmartLinkV2,
+      });
+    }
+
+    // ✅ Si pas de conversion en V2, mise à jour classique
     if (updateData.folder) {
       updateData.folder = new mongoose.Types.ObjectId(updateData.folder);
     }
 
-    // ✅ Met à jour le SmartLink
     const updatedSmartLink = await SmartLinkV2.findOneAndUpdate(
       { _id: id },
       { $set: updateData },
@@ -109,7 +141,7 @@ exports.updateSmartLink = async (req, res) => {
       return res.status(404).json({ message: "SmartLink non trouvé." });
     }
 
-    // ✅ Met à jour le parentFolder du dossier si modifié
+    // ✅ Met à jour le parentFolder si modifié
     if (updateData.parentFolder) {
       console.log(
         `🔄 Mise à jour du parentFolder du dossier ${updateData.folder}`

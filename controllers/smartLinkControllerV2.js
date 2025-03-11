@@ -1,5 +1,5 @@
 const SmartLinkV2 = require("../models/SmartLinkV2");
-const SmartLink = require("../models/smartLink");
+const SmartLink = require("../models/SmartLink");
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 const Folder = require("../models/Folder");

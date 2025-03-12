@@ -100,32 +100,36 @@ exports.updatePress = async (req, res) => {
 exports.updateOrder = async (req, res) => {
   try {
     const { orderedPress } = req.body;
-    console.log("Payload reçu pour mise à jour :", orderedPress);
+    console.log("Payload reçu :", orderedPress); // 🔍 Debug log
 
-    // Vérifier si les IDs sont bien des ObjectId
-    const bulkOps = orderedPress.map((press) => ({
-      updateOne: {
-        filter: { _id: new mongoose.Types.ObjectId(press._id) }, // 🔥 Convertit _id en ObjectId
-        update: { order: press.order },
-      },
-    }));
-
-    // Vérifier que tous les _id existent bien dans la base avant la mise à jour
-    const existingPress = await Press.find({
-      _id: { $in: orderedPress.map((p) => new mongoose.Types.ObjectId(p._id)) },
-    });
-
-    if (existingPress.length !== orderedPress.length) {
-      return res.status(400).json({
-        error: "Certains IDs ne sont pas valides ou inexistants en base",
-      });
+    // Assurez-vous que chaque élément contient bien `_id` et `order`
+    if (
+      !Array.isArray(orderedPress) ||
+      orderedPress.some((p) => !p._id || typeof p.order !== "number")
+    ) {
+      return res.status(400).json({ error: "Format invalide du payload" });
     }
 
+    // Vérification et conversion en ObjectId
+    const bulkOps = orderedPress.map((press) => {
+      if (!mongoose.Types.ObjectId.isValid(press._id)) {
+        console.error(`ID invalide détecté : ${press._id}`);
+        throw new Error(`L'ID ${press._id} n'est pas un ObjectId valide`);
+      }
+
+      return {
+        updateOne: {
+          filter: { _id: new mongoose.Types.ObjectId(press._id) }, // ✅ Convertit en ObjectId
+          update: { order: press.order },
+        },
+      };
+    });
+
     await Press.bulkWrite(bulkOps);
-    console.log("Mise à jour de l'ordre réussie !");
-    res.json({ message: "Ordre des articles mis à jour avec succès !" });
+    console.log("Ordre mis à jour avec succès !");
+    res.json({ message: "Ordre mis à jour avec succès !" });
   } catch (error) {
-    console.error("Erreur serveur :", error);
+    console.error("Erreur lors de la mise à jour de l'ordre :", error.message);
     res.status(500).json({ error: error.message });
   }
 };

@@ -50,9 +50,9 @@ router.put("/bio", auth, uploadImage, bioController.updateBio);
 // PRESS ROUTES
 
 router.post("/add-press", uploadImage, pressController.createPress);
-router.get("/press", pressController.getPress);
-router.put("/press", uploadImage, pressController.updatePress);
-router.delete("/press", pressController.deletePress);
+router.get("/press/:id", pressController.getPress);
+router.put("/press/:id", uploadImage, pressController.updatePress);
+router.delete("/press/:id", pressController.deletePress);
 router.get("/all-press", pressController.findAllPress);
 
 // FOLDERS ROUTES

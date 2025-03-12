@@ -8,7 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Créer un article de presse
+// **Créer un article de presse avec un ordre**
 exports.createPress = async (req, res) => {
   try {
     const { link, alt } = req.body;
@@ -22,11 +22,16 @@ exports.createPress = async (req, res) => {
       folder: "press",
     });
 
-    // Gestion du champ `link` vide (on met `null` si absent)
+    // Trouver le plus grand ordre actuel et ajouter +1 pour le nouveau
+    const lastPress = await Press.findOne().sort({ order: -1 });
+    const newOrder = lastPress ? lastPress.order + 1 : 0;
+
+    // Création de l'article de presse avec le champ `order`
     const press = new Press({
       image: result.secure_url,
       link: link && link.trim() !== "" ? link : null,
       alt,
+      order: newOrder, // Assignation du nouvel ordre
     });
 
     await press.save();
@@ -36,7 +41,7 @@ exports.createPress = async (req, res) => {
   }
 };
 
-// Obtenir un article de presse par ID
+// **Obtenir un article de presse par ID**
 exports.getPress = async (req, res) => {
   try {
     const press = await Press.findById(req.params.id);
@@ -47,17 +52,17 @@ exports.getPress = async (req, res) => {
   }
 };
 
-// Obtenir tous les articles de presse
+// **Obtenir tous les articles de presse triés par ordre**
 exports.findAllPress = async (req, res) => {
   try {
-    const press = await Press.find();
+    const press = await Press.find().sort({ order: 1 }); // Trie par ordre croissant
     res.json(press);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// Mettre à jour un article de presse
+// **Mettre à jour un article de presse**
 exports.updatePress = async (req, res) => {
   try {
     const { link, alt } = req.body;
@@ -91,7 +96,27 @@ exports.updatePress = async (req, res) => {
   }
 };
 
-// Supprimer un article de presse
+// **Mettre à jour l'ordre des articles**
+exports.updateOrder = async (req, res) => {
+  try {
+    const { orderedPress } = req.body; // Tableau contenant les nouveaux ordres
+
+    // Mise à jour en bulk pour optimiser les requêtes
+    const bulkOps = orderedPress.map((press) => ({
+      updateOne: {
+        filter: { _id: press._id },
+        update: { order: press.order },
+      },
+    }));
+
+    await Press.bulkWrite(bulkOps);
+    res.json({ message: "Ordre des articles mis à jour avec succès !" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// **Supprimer un article de presse**
 exports.deletePress = async (req, res) => {
   try {
     const deletedPress = await Press.findByIdAndDelete(req.params.id);

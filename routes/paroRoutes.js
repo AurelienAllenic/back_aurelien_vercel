@@ -42,8 +42,17 @@ router.get("/social-links", socialLinksController.getSocialLinks);
 router.put("/social-links", auth, socialLinksController.updateSocialLinks);
 
 // BIO ROUTES
+
 router.get("/bio", bioController.getBio);
 router.put("/bio", auth, uploadImage, bioController.updateBio);
+
+// SINGLE ROUTES
+
+router.post("/add-single", uploadImage, singleController.createSingle);
+router.get("/single", singleController.getSingle);
+router.put("/single", uploadImage, singleController.updateSingle);
+router.delete("/single", singleController.deleteSingle);
+router.get("/all-singles", singleController.findAllSingles);
 
 // FOLDERS ROUTES
 

@@ -98,7 +98,6 @@ exports.updatePress = async (req, res) => {
 };
 
 // **Mettre à jour l'ordre des articles**
-// **Mettre à jour l'ordre des articles**
 exports.updateOrder = async (req, res) => {
   try {
     const { orderedPress } = req.body;
@@ -107,7 +106,7 @@ exports.updateOrder = async (req, res) => {
     // Assure-toi que les IDs sont convertis correctement en ObjectId
     const bulkOps = orderedPress.map((press) => ({
       updateOne: {
-        filter: { _id: mongoose.Types.ObjectId(press._id) }, // Conversion en ObjectId si nécessaire
+        filter: { _id: mongoose.Types.ObjectId(press._id) }, // Convertir en ObjectId si nécessaire
         update: { order: press.order },
       },
     }));

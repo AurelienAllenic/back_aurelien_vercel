@@ -99,19 +99,18 @@ exports.updatePress = async (req, res) => {
 // **Mettre à jour l'ordre des articles**
 exports.updateOrder = async (req, res) => {
   try {
-    const { orderedPress } = req.body; // Tableau contenant les nouveaux ordres
-
-    // Mise à jour en bulk pour optimiser les requêtes
+    const { orderedPress } = req.body;
+    console.log("Données reçues par le serveur :", orderedPress); // Ajoute ceci
     const bulkOps = orderedPress.map((press) => ({
       updateOne: {
         filter: { _id: press._id },
         update: { order: press.order },
       },
     }));
-
     await Press.bulkWrite(bulkOps);
     res.json({ message: "Ordre des articles mis à jour avec succès !" });
   } catch (error) {
+    console.error("Erreur serveur :", error); // Log plus détaillé
     res.status(500).json({ error: error.message });
   }
 };

@@ -83,6 +83,7 @@ exports.updatePress = async (req, res) => {
 
 // **Mettre à jour l'ordre des articles**
 exports.updateOrder = async (req, res) => {
+  console.log("📥 Requête reçue pour /press/order - req.body brut :", req.body);
   try {
     const { orderedPress } = req.body;
     console.log("Données reçues par /press/order :", orderedPress);

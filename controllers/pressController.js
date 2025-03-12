@@ -100,17 +100,32 @@ exports.updatePress = async (req, res) => {
 exports.updateOrder = async (req, res) => {
   try {
     const { orderedPress } = req.body;
-    console.log("Données reçues par le serveur :", orderedPress); // Ajoute ceci
+    console.log("Payload reçu pour mise à jour :", orderedPress);
+
+    // Vérifier si les IDs sont bien des ObjectId
     const bulkOps = orderedPress.map((press) => ({
       updateOne: {
-        filter: { _id: press._id },
+        filter: { _id: new mongoose.Types.ObjectId(press._id) }, // 🔥 Convertit _id en ObjectId
         update: { order: press.order },
       },
     }));
+
+    // Vérifier que tous les _id existent bien dans la base avant la mise à jour
+    const existingPress = await Press.find({
+      _id: { $in: orderedPress.map((p) => new mongoose.Types.ObjectId(p._id)) },
+    });
+
+    if (existingPress.length !== orderedPress.length) {
+      return res.status(400).json({
+        error: "Certains IDs ne sont pas valides ou inexistants en base",
+      });
+    }
+
     await Press.bulkWrite(bulkOps);
+    console.log("Mise à jour de l'ordre réussie !");
     res.json({ message: "Ordre des articles mis à jour avec succès !" });
   } catch (error) {
-    console.error("Erreur serveur :", error); // Log plus détaillé
+    console.error("Erreur serveur :", error);
     res.status(500).json({ error: error.message });
   }
 };

@@ -54,6 +54,7 @@ router.get("/press/:id", pressController.getPress);
 router.put("/press/:id", uploadImage, pressController.updatePress);
 router.delete("/press/:id", pressController.deletePress);
 router.get("/all-press", pressController.findAllPress);
+router.put("/press/order", pressController.updateOrder);
 
 // FOLDERS ROUTES
 

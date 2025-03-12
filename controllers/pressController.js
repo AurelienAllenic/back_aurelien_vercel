@@ -22,14 +22,14 @@ exports.createPress = async (req, res) => {
       folder: "press",
     });
 
-    const single = new Single({
+    const press = new Press({
       image: result.secure_url,
       link,
       alt,
     });
 
-    await single.save();
-    res.status(201).json(single);
+    await press.save();
+    res.status(201).json(press);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

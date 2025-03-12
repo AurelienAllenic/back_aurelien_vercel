@@ -1,4 +1,4 @@
-const Single = require("../models/Single");
+const Press = require("../models/Press");
 const cloudinary = require("cloudinary").v2;
 
 // Configurer Cloudinary
@@ -9,7 +9,7 @@ cloudinary.config({
 });
 
 // Créer un single
-exports.createSingle = async (req, res) => {
+exports.createPress = async (req, res) => {
   try {
     const { link, alt } = req.body;
 
@@ -19,7 +19,7 @@ exports.createSingle = async (req, res) => {
 
     // Upload de l'image sur Cloudinary
     const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "singles",
+      folder: "press",
     });
 
     const single = new Single({
@@ -35,60 +35,60 @@ exports.createSingle = async (req, res) => {
   }
 };
 
-// Obtenir un single (on suppose qu'il est unique)
-exports.getSingle = async (req, res) => {
+// Obtenir une press (on suppose qu'elle est unique)
+exports.getPress = async (req, res) => {
   try {
-    const single = await Single.findOne();
-    if (!single) return res.status(404).json({ error: "Aucun single trouvé" });
-    res.json(single);
+    const press = await Press.findOne();
+    if (!press) return res.status(404).json({ error: "Aucune press trouvé" });
+    res.json(press);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// **Nouvelle méthode** : Obtenir tous les singles
-exports.findAllSingles = async (req, res) => {
+// **Nouvelle méthode** : Obtenir toutes les press
+exports.findAllPress = async (req, res) => {
   try {
-    const singles = await Single.find();
-    res.json(singles);
+    const press = await Press.find();
+    res.json(press);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
 // Mettre à jour un single
-exports.updateSingle = async (req, res) => {
+exports.updatePress = async (req, res) => {
   try {
     const { link, alt } = req.body;
     let updateData = { link, alt };
 
     if (req.file && req.file.path) {
       const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "singles",
+        folder: "press",
       });
       updateData.image = result.secure_url;
     }
 
-    const updatedSingle = await Single.findOneAndUpdate({}, updateData, {
+    const updatedPress = await Press.findOneAndUpdate({}, updateData, {
       new: true,
     });
-    if (!updatedSingle)
-      return res.status(404).json({ error: "Aucun single à mettre à jour" });
+    if (!updatedPress)
+      return res.status(404).json({ error: "Aucune press à mettre à jour" });
 
-    res.json(updatedSingle);
+    res.json(updatedPress);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
 // Supprimer un single
-exports.deleteSingle = async (req, res) => {
+exports.deletePress = async (req, res) => {
   try {
-    const deletedSingle = await Single.findOneAndDelete();
-    if (!deletedSingle)
-      return res.status(404).json({ error: "Aucun single à supprimer" });
+    const deletedPress = await Press.findOneAndDelete();
+    if (!deletedPress)
+      return res.status(404).json({ error: "Aucune press à supprimer" });
 
-    res.json({ message: "Single supprimé avec succès" });
+    res.json({ message: "Press supprimée avec succès" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

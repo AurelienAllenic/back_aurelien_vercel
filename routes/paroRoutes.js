@@ -8,6 +8,7 @@ const auth = require("../middlewares/authMiddleware");
 const { uploadImage } = require("../middlewares/multerMiddleware");
 const socialLinksController = require("../controllers/socialLinksController");
 const bioController = require("../controllers/bioController");
+const pressController = require("../controllers/pressController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -46,13 +47,13 @@ router.put("/social-links", auth, socialLinksController.updateSocialLinks);
 router.get("/bio", bioController.getBio);
 router.put("/bio", auth, uploadImage, bioController.updateBio);
 
-// SINGLE ROUTES
+// PRESS ROUTES
 
-router.post("/add-single", uploadImage, singleController.createSingle);
-router.get("/single", singleController.getSingle);
-router.put("/single", uploadImage, singleController.updateSingle);
-router.delete("/single", singleController.deleteSingle);
-router.get("/all-singles", singleController.findAllSingles);
+router.post("/add-press", uploadImage, pressController.createPress);
+router.get("/press", pressController.getPress);
+router.put("/press", uploadImage, pressController.updatePress);
+router.delete("/press", pressController.deletePress);
+router.get("/all-press", pressController.findAllPress);
 
 // FOLDERS ROUTES
 

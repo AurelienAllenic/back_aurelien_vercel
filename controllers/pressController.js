@@ -87,20 +87,54 @@ exports.updateOrder = async (req, res) => {
     const { orderedPress } = req.body;
     console.log("Données reçues par /press/order :", orderedPress);
 
-    const bulkOps = orderedPress.map((press) => {
-      if (!mongoose.Types.ObjectId.isValid(press._id)) {
-        console.error(`❌ ID invalide dans updateOrder : ${press._id}`);
-        throw new Error(`ID invalide : ${press._id}`);
-      }
-      return {
-        updateOne: {
-          filter: { _id: mongoose.Types.ObjectId(press._id) },
-          update: { order: press.order },
-        },
-      };
-    });
+    // Vérifie que orderedPress est un tableau
+    if (!Array.isArray(orderedPress)) {
+      return res
+        .status(400)
+        .json({ error: "orderedPress doit être un tableau" });
+    }
 
-    await Press.bulkWrite(bulkOps);
+    // Met à jour chaque article individuellement
+    for (const press of orderedPress) {
+      const { _id, order } = press;
+
+      // Validation stricte de _id
+      if (
+        !_id ||
+        typeof _id !== "string" ||
+        !mongoose.Types.ObjectId.isValid(_id)
+      ) {
+        console.error(`❌ ID invalide dans orderedPress : ${_id}`, press);
+        return res.status(400).json({ error: `ID invalide : ${_id}` });
+      }
+
+      // Validation de order
+      if (!Number.isInteger(order)) {
+        console.error(`❌ order invalide pour _id ${_id} : ${order}`, press);
+        return res
+          .status(400)
+          .json({ error: `order invalide pour _id ${_id}` });
+      }
+
+      // Mise à jour uniquement du champ order
+      const updatedPress = await Press.findByIdAndUpdate(
+        _id,
+        { order },
+        { new: true } // Retourne le document mis à jour (optionnel)
+      );
+
+      if (!updatedPress) {
+        console.error(`❌ Aucun article trouvé pour _id : ${_id}`);
+        return res
+          .status(404)
+          .json({ error: `Aucun article trouvé pour _id : ${_id}` });
+      }
+
+      console.log(
+        `Mise à jour réussie pour _id : ${_id}, nouvel order : ${order}`
+      );
+    }
+
     res.json({ message: "Ordre des articles mis à jour avec succès !" });
   } catch (error) {
     console.error("Erreur serveur dans updateOrder :", error);

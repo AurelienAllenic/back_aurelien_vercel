@@ -8,7 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Créer un single
+// Créer un article de presse
 exports.createPress = async (req, res) => {
   try {
     const { link, alt } = req.body;
@@ -22,9 +22,10 @@ exports.createPress = async (req, res) => {
       folder: "press",
     });
 
+    // Gestion du champ `link` vide (on met `null` si absent)
     const press = new Press({
       image: result.secure_url,
-      link,
+      link: link && link.trim() !== "" ? link : null,
       alt,
     });
 
@@ -35,18 +36,18 @@ exports.createPress = async (req, res) => {
   }
 };
 
-// Obtenir une press (on suppose qu'elle est unique)
+// Obtenir un article de presse par ID
 exports.getPress = async (req, res) => {
   try {
-    const press = await Press.findOne();
-    if (!press) return res.status(404).json({ error: "Aucune press trouvé" });
+    const press = await Press.findById(req.params.id);
+    if (!press) return res.status(404).json({ error: "Article introuvable" });
     res.json(press);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// **Nouvelle méthode** : Obtenir toutes les press
+// Obtenir tous les articles de presse
 exports.findAllPress = async (req, res) => {
   try {
     const press = await Press.find();
@@ -56,12 +57,16 @@ exports.findAllPress = async (req, res) => {
   }
 };
 
-// Mettre à jour un single
+// Mettre à jour un article de presse
 exports.updatePress = async (req, res) => {
   try {
     const { link, alt } = req.body;
-    let updateData = { link, alt };
+    let updateData = { alt };
 
+    // Si `link` est vide, on met `null`
+    updateData.link = link && link.trim() !== "" ? link : null;
+
+    // Gestion de l'image mise à jour sur Cloudinary
     if (req.file && req.file.path) {
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "press",
@@ -69,11 +74,16 @@ exports.updatePress = async (req, res) => {
       updateData.image = result.secure_url;
     }
 
-    const updatedPress = await Press.findOneAndUpdate({}, updateData, {
-      new: true,
-    });
+    const updatedPress = await Press.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      {
+        new: true,
+      }
+    );
+
     if (!updatedPress)
-      return res.status(404).json({ error: "Aucune press à mettre à jour" });
+      return res.status(404).json({ error: "Aucun article à mettre à jour" });
 
     res.json(updatedPress);
   } catch (error) {
@@ -81,14 +91,14 @@ exports.updatePress = async (req, res) => {
   }
 };
 
-// Supprimer un single
+// Supprimer un article de presse
 exports.deletePress = async (req, res) => {
   try {
-    const deletedPress = await Press.findOneAndDelete();
+    const deletedPress = await Press.findByIdAndDelete(req.params.id);
     if (!deletedPress)
-      return res.status(404).json({ error: "Aucune press à supprimer" });
+      return res.status(404).json({ error: "Aucun article à supprimer" });
 
-    res.json({ message: "Press supprimée avec succès" });
+    res.json({ message: "Article supprimé avec succès" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

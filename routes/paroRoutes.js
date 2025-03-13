@@ -49,12 +49,12 @@ router.put("/bio", auth, uploadImage, bioController.updateBio);
 
 // PRESS ROUTES
 
-router.post("/add-press", uploadImage, pressController.createPress);
-router.get("/press/:id", pressController.getPress);
-router.put("/press/:id", uploadImage, pressController.updatePress);
-router.delete("/press/:id", pressController.deletePress);
+router.post("/add-press", auth, uploadImage, pressController.createPress);
+router.get("/press/:id", auth, pressController.getPress);
+router.put("/press/:id", auth, uploadImage, pressController.updatePress);
+router.delete("/press/:id", auth, pressController.deletePress);
 router.get("/all-press", pressController.findAllPress);
-router.put("/press/order", pressController.updateOrder);
+router.put("/order-press", pressController.updateOrder);
 
 // FOLDERS ROUTES
 

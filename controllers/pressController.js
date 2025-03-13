@@ -37,7 +37,6 @@ exports.createPress = async (req, res) => {
 // **Obtenir un article de presse par ID**
 exports.getPress = async (req, res) => {
   try {
-    console.log("Requête getPress avec ID :", req.params.id);
     const press = await Press.findById(req.params.id);
     if (!press) return res.status(404).json({ error: "Article introuvable" });
     res.json(press);
@@ -83,62 +82,53 @@ exports.updatePress = async (req, res) => {
 
 // **Mettre à jour l'ordre des articles**
 exports.updateOrder = async (req, res) => {
-  console.log("📥 Requête reçue pour /press/order - req.body brut :", req.body);
   try {
     const { orderedPress } = req.body;
-    console.log("Données reçues par /press/order :", orderedPress);
-
-    // Vérifie que orderedPress est un tableau
     if (!Array.isArray(orderedPress)) {
+      console.error("❌ ERREUR: orderedPress doit être un tableau !");
       return res
         .status(400)
         .json({ error: "orderedPress doit être un tableau" });
     }
 
-    // Met à jour chaque article individuellement
-    for (const press of orderedPress) {
-      const { _id, order } = press;
+    const currentOrders = {};
+    const pressDocs = await Press.find();
 
-      // Validation stricte de _id
-      if (
-        !_id ||
-        typeof _id !== "string" ||
-        !mongoose.Types.ObjectId.isValid(_id)
-      ) {
-        console.error(`❌ ID invalide dans orderedPress : ${_id}`, press);
+    pressDocs.forEach((doc) => {
+      currentOrders[doc._id.toString()] = doc.order;
+    });
+
+    for (const press of orderedPress) {
+      const { _id, order: newOrder } = press;
+
+      if (!mongoose.Types.ObjectId.isValid(_id)) {
+        console.error(`❌ ID invalide : ${_id}`);
         return res.status(400).json({ error: `ID invalide : ${_id}` });
       }
 
-      // Validation de order
-      if (!Number.isInteger(order)) {
-        console.error(`❌ order invalide pour _id ${_id} : ${order}`, press);
-        return res
-          .status(400)
-          .json({ error: `order invalide pour _id ${_id}` });
+      const oldOrder = currentOrders[_id];
+
+      if (oldOrder !== newOrder) {
+        const swappedPress = await Press.findOne({ order: newOrder });
+
+        if (swappedPress) {
+          await Press.updateOne(
+            { _id: swappedPress._id },
+            { $set: { order: oldOrder } }
+          );
+        }
+
+        await Press.updateOne(
+          { _id: new mongoose.Types.ObjectId(_id) },
+          { $set: { order: newOrder } }
+        );
       }
-
-      // Mise à jour uniquement du champ order
-      const updatedPress = await Press.findByIdAndUpdate(
-        _id,
-        { order },
-        { new: true } // Retourne le document mis à jour (optionnel)
-      );
-
-      if (!updatedPress) {
-        console.error(`❌ Aucun article trouvé pour _id : ${_id}`);
-        return res
-          .status(404)
-          .json({ error: `Aucun article trouvé pour _id : ${_id}` });
-      }
-
-      console.log(
-        `Mise à jour réussie pour _id : ${_id}, nouvel order : ${order}`
-      );
     }
 
-    res.json({ message: "Ordre des articles mis à jour avec succès !" });
+    const updatedPress = await Press.find().sort({ order: 1 });
+    res.json({ message: "Ordre mis à jour avec succès !" });
   } catch (error) {
-    console.error("Erreur serveur dans updateOrder :", error);
+    console.error("❌ Erreur serveur dans updateOrder :", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -146,7 +136,6 @@ exports.updateOrder = async (req, res) => {
 // **Supprimer un article de presse**
 exports.deletePress = async (req, res) => {
   try {
-    console.log("Requête deletePress avec ID :", req.params.id);
     const deletedPress = await Press.findByIdAndDelete(req.params.id);
     if (!deletedPress)
       return res.status(404).json({ error: "Aucun article à supprimer" });

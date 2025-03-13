@@ -31,24 +31,20 @@ exports.updateBio = async (req, res) => {
   try {
     const updateData = req.body;
 
-    console.log("📥 Données reçues pour mise à jour :", updateData);
-
     let newImageUrl = null;
 
     // 🔹 Si une nouvelle image est uploadée
     if (req.file) {
-      console.log("📤 Upload de l'image sur Cloudinary...");
       try {
         const cloudinaryResult = await cloudinary.uploader.upload(
           req.file.path,
           {
-            quality: "auto:low", // Compression automatique
-            fetch_format: "auto", // Convertit l'image au meilleur format
-            folder: "bio", // Stockage dans un dossier spécifique
+            quality: "auto:low",
+            fetch_format: "auto",
+            folder: "bio",
           }
         );
 
-        console.log("✅ Image téléchargée sur Cloudinary :", cloudinaryResult);
         newImageUrl = cloudinaryResult.secure_url;
       } catch (error) {
         console.error("❌ Erreur Cloudinary :", error);
@@ -58,15 +54,12 @@ exports.updateBio = async (req, res) => {
       }
     }
 
-    // 🔹 Recherche de la bio existante
     let bio = await Bio.findOne();
 
     if (!bio) {
-      console.log("🔄 Création d'une nouvelle bio...");
       bio = new Bio({ ...updateData, image: newImageUrl });
       await bio.save();
     } else {
-      // 🔹 Mise à jour de la bio existante
       bio = await Bio.findOneAndUpdate(
         {},
         { $set: { ...updateData, image: newImageUrl || bio.image } },

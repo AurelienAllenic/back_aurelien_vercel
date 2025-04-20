@@ -1,4 +1,4 @@
-const Video = require("../models/Video");
+const Video = require("../models/Videos");
 const mongoose = require("mongoose");
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs").promises;

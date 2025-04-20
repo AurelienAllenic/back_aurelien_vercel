@@ -78,10 +78,10 @@ router.delete(
 );
 
 // VIDEO ROUTES
-router.post("/add-video", auth, videoController.addVideo);
+router.post("/add-video", auth, uploadImage, videoController.addVideo);
 router.get("/videos", videoController.findAllVideos);
 router.get("/videos/:id", videoController.findOneVideo);
-router.put("/videos/:id", auth, videoController.updateVideo);
+router.put("/videos/:id", auth, uploadImage, ideoController.updateVideo);
 router.delete("/videos/:id", auth, videoController.deleteVideo);
 
 module.exports = router;

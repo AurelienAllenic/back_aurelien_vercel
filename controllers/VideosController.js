@@ -1,16 +1,25 @@
 const Video = require("../models/Video");
 const mongoose = require("mongoose");
+const cloudinary = require("cloudinary").v2;
+
+// Configure Cloudinary (ensure these are set in your environment variables)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // Ajouter une vidéo
 exports.addVideo = async (req, res) => {
-  const { index, link, classVid, alt, image, title, modifiedTitle } = req.body;
+  const { index, link, classVid, alt, title, modifiedTitle } = req.body;
+  const file = req.file; // Assuming multer middleware provides the file
 
   if (
     !index ||
     !link ||
     !classVid ||
     !alt ||
-    !image ||
+    !file ||
     !title ||
     !modifiedTitle
   ) {
@@ -18,12 +27,18 @@ exports.addVideo = async (req, res) => {
   }
 
   try {
+    // Upload image to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(file.path, {
+      folder: "captures_3d", // Optional: organize in a Cloudinary folder
+      resource_type: "image",
+    });
+
     const newVideo = new Video({
       index,
       link,
       classVid,
       alt,
-      image,
+      image: uploadResult.secure_url, // Store Cloudinary URL
       title,
       modifiedTitle,
     });
@@ -77,17 +92,35 @@ exports.findOneVideo = async (req, res) => {
 // Mettre à jour une vidéo
 exports.updateVideo = async (req, res) => {
   const { id } = req.params;
-  const updateData = req.body;
+  const { index, link, classVid, alt, title, modifiedTitle } = req.body;
+  const file = req.file; // New image file, if provided
 
   try {
     if (!id) {
       return res.status(400).json({ message: "ID manquant dans la requête." });
     }
 
-    if (Object.keys(updateData).length === 0) {
+    const updateData = {};
+    if (index) updateData.index = index;
+    if (link) updateData.link = link;
+    if (classVid) updateData.classVid = classVid;
+    if (alt) updateData.alt = alt;
+    if (title) updateData.title = title;
+    if (modifiedTitle) updateData.modifiedTitle = modifiedTitle;
+
+    if (Object.keys(updateData).length === 0 && !file) {
       return res
         .status(400)
         .json({ message: "Aucune donnée à mettre à jour." });
+    }
+
+    if (file) {
+      // Upload new image to Cloudinary
+      const uploadResult = await cloudinary.uploader.upload(file.path, {
+        folder: "captures_3d",
+        resource_type: "image",
+      });
+      updateData.image = uploadResult.secure_url;
     }
 
     const updatedVideo = await Video.findOneAndUpdate(
@@ -122,6 +155,19 @@ exports.deleteVideo = async (req, res) => {
   }
 
   try {
+    // Find the video to get the image URL
+    const video = await Video.findById(id);
+    if (!video) {
+      return res.status(404).json({ message: "Vidéo non trouvée." });
+    }
+
+    // Extract public ID from Cloudinary URL and delete the image
+    if (video.image) {
+      const publicId = video.image.split("/").slice(-2).join("/").split(".")[0]; // Extract public ID (e.g., captures_3d/Capture_paro)
+      await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+    }
+
+    // Delete the video from the database
     const result = await Video.deleteOne({ _id: id });
 
     if (result.deletedCount === 0) {

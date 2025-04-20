@@ -81,7 +81,7 @@ router.delete(
 router.post("/add-video", auth, uploadImage, videoController.addVideo);
 router.get("/videos", videoController.findAllVideos);
 router.get("/videos/:id", videoController.findOneVideo);
-router.put("/videos/:id", auth, uploadImage, ideoController.updateVideo);
+router.put("/videos/:id", auth, uploadImage, videoController.updateVideo);
 router.delete("/videos/:id", auth, videoController.deleteVideo);
 
 module.exports = router;

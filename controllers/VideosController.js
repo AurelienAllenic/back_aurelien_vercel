@@ -26,15 +26,7 @@ exports.addVideo = async (req, res) => {
       resource_type: "image",
     });
 
-    // Supprimer le fichier temporaire
-    try {
-      await fs.unlink(file.path);
-    } catch (cleanupError) {
-      console.warn(
-        "⚠️ Erreur lors du nettoyage du fichier temporaire :",
-        cleanupError
-      );
-    }
+    // Suppression du fichier temporaire supprimée
 
     const newVideo = new Video({
       link,
@@ -51,16 +43,6 @@ exports.addVideo = async (req, res) => {
       .json({ message: "✅ Vidéo créée avec succès", data: newVideo });
   } catch (error) {
     console.error("❌ Erreur backend :", error);
-    if (file && file.path) {
-      try {
-        await fs.unlink(file.path);
-      } catch (cleanupError) {
-        console.warn(
-          "⚠️ Erreur lors du nettoyage du fichier temporaire :",
-          cleanupError
-        );
-      }
-    }
     res.status(400).json({
       message: "Erreur lors de la création de la vidéo",
       error: error.message,
@@ -131,7 +113,7 @@ exports.updateVideo = async (req, res) => {
     }
 
     if (file) {
-      // Supprimer l'ancienne image de Cloudinary
+      // Supprimer l'ancienne image de Cloudinary (le code peut rester pour cette partie)
       if (existingVideo.image) {
         const oldPublicId = existingVideo.image
           .split("/")
@@ -157,15 +139,7 @@ exports.updateVideo = async (req, res) => {
       });
       updateData.image = uploadResult.secure_url;
 
-      // Supprimer le fichier temporaire
-      try {
-        await fs.unlink(file.path);
-      } catch (cleanupError) {
-        console.warn(
-          "⚠️ Erreur lors du nettoyage du fichier temporaire :",
-          cleanupError
-        );
-      }
+      // Suppression du fichier temporaire supprimée ici aussi
     }
 
     const updatedVideo = await Video.findOneAndUpdate(
@@ -184,16 +158,6 @@ exports.updateVideo = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Erreur lors de la mise à jour :", error);
-    if (file && file.path) {
-      try {
-        await fs.unlink(file.path);
-      } catch (cleanupError) {
-        console.warn(
-          "⚠️ Erreur lors du nettoyage du fichier temporaire :",
-          cleanupError
-        );
-      }
-    }
     res.status(400).json({
       message: "Erreur lors de la mise à jour de la vidéo",
       error: error.message,

@@ -9,6 +9,10 @@ const { uploadImage } = require("../middlewares/multerMiddleware");
 const socialLinksController = require("../controllers/socialLinksController");
 const bioController = require("../controllers/bioController");
 const pressController = require("../controllers/pressController");
+const {
+  convertImageToWebP,
+} = require("../middlewares/imageConversionMiddleware");
+const videoController = require("../controllers/VideosController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -45,7 +49,13 @@ router.put("/social-links", auth, socialLinksController.updateSocialLinks);
 // BIO ROUTES
 
 router.get("/bio", bioController.getBio);
-router.put("/bio", auth, uploadImage, bioController.updateBio);
+router.put(
+  "/bio",
+  auth,
+  uploadImage,
+  convertImageToWebP,
+  bioController.updateBio
+);
 
 // PRESS ROUTES
 
@@ -75,5 +85,12 @@ router.delete(
   auth,
   smartLinkFolderController.deleteFolder
 );
+
+// VIDEO ROUTES
+router.post("/add-video", auth, videoController.addVideo);
+router.get("/videos", videoController.findAllVideos);
+router.get("/videos/:id", videoController.findOneVideo);
+router.put("/videos/:id", auth, videoController.updateVideo);
+router.delete("/videos/:id", auth, videoController.deleteVideo);
 
 module.exports = router;

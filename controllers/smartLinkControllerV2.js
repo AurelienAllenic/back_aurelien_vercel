@@ -6,7 +6,6 @@ const Folder = require("../models/Folder");
 
 // Ajouter un lien
 exports.addSmartLink = async (req, res) => {
-  console.log("📥 Données reçues :", req.body);
   const { title, linkType, titleType, modifiedTitle, link, folder } = req.body;
 
   if (!title || !linkType || !titleType || !modifiedTitle || !link) {
@@ -81,8 +80,6 @@ exports.updateSmartLink = async (req, res) => {
   const { id } = req.params;
   const updateData = req.body;
 
-  console.log("📥 Données reçues pour mise à jour :", updateData);
-
   try {
     if (!id) {
       return res.status(400).json({ message: "ID manquant dans la requête." });
@@ -107,8 +104,6 @@ exports.updateSmartLink = async (req, res) => {
 
     // ✅ Si c'est un SmartLink V1 et un dossier est ajouté -> Supprimer et recréer en V2
     if (existingSmartLink instanceof SmartLink && updateData.folder) {
-      console.log("🔄 Suppression du SmartLink V1 et création en V2...");
-
       // 1️⃣ Supprimer le SmartLink V1
       await SmartLink.findByIdAndDelete(id);
 
@@ -149,10 +144,6 @@ exports.updateSmartLink = async (req, res) => {
 
     // ✅ Si un parentFolder est modifié, mise à jour du dossier
     if (updateData.parentFolder) {
-      console.log(
-        `🔄 Mise à jour du parentFolder du dossier ${updateData.folder}`
-      );
-
       await Folder.findOneAndUpdate(
         { _id: updateData.folder },
         {
@@ -169,8 +160,6 @@ exports.updateSmartLink = async (req, res) => {
       "parentFolder"
     );
 
-    console.log("✅ Dossier mis à jour avec parentFolder :", updatedFolder);
-
     res.status(200).json({
       message: "SmartLink mis à jour avec succès",
       data: updatedSmartLink,
@@ -186,7 +175,6 @@ exports.updateSmartLink = async (req, res) => {
 
 exports.deleteSmartLink = async (req, res) => {
   const { id } = req.params;
-  console.log("📤 Suppression du SmartLink :", id);
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "ID invalide." });
@@ -204,7 +192,6 @@ exports.deleteSmartLink = async (req, res) => {
       await Folder.findByIdAndUpdate(smartLink.folder, {
         $pull: { smartLinks: id }, // Retire l'ID du SmartLink de la liste des SmartLinks du dossier
       });
-      console.log(`✅ SmartLink ${id} supprimé du dossier ${smartLink.folder}`);
     }
 
     // ✅ Supprimer le SmartLink de la base de données

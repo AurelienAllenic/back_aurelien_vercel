@@ -15,15 +15,7 @@ exports.addVideo = async (req, res) => {
   const { index, link, classVid, alt, title, modifiedTitle } = req.body;
   const file = req.file;
 
-  if (
-    !index ||
-    !link ||
-    !classVid ||
-    !alt ||
-    !file ||
-    !title ||
-    !modifiedTitle
-  ) {
+  if (!link || !classVid || !alt || !file || !title || !modifiedTitle) {
     return res.status(400).json({ message: "Tous les champs sont requis." });
   }
 
@@ -45,7 +37,6 @@ exports.addVideo = async (req, res) => {
     }
 
     const newVideo = new Video({
-      index,
       link,
       classVid,
       alt,
@@ -115,7 +106,7 @@ exports.findOneVideo = async (req, res) => {
 // Mettre à jour une vidéo
 exports.updateVideo = async (req, res) => {
   const { id } = req.params;
-  const { index, link, classVid, alt, title, modifiedTitle } = req.body;
+  const { link, classVid, alt, title, modifiedTitle } = req.body;
   const file = req.file;
 
   try {
@@ -124,7 +115,6 @@ exports.updateVideo = async (req, res) => {
     }
 
     const updateData = {};
-    if (index) updateData.index = index;
     if (link) updateData.link = link;
     if (classVid) updateData.classVid = classVid;
     if (alt) updateData.alt = alt;
@@ -226,7 +216,7 @@ exports.deleteVideo = async (req, res) => {
     if (!video) {
       return res.status(404).json({ message: "Vidéo non trouvée." });
     }
-
+    /*
     // Supprimer l'image de Cloudinary
     if (video.image) {
       const publicId = video.image.split("/").slice(-2).join("/").split(".")[0];
@@ -239,7 +229,7 @@ exports.deleteVideo = async (req, res) => {
         );
       }
     }
-
+*/
     // Supprimer la vidéo de la base de données
     const result = await Video.deleteOne({ _id: id });
 

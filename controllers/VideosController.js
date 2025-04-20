@@ -12,10 +12,10 @@ cloudinary.config({
 
 // Ajouter une vidéo
 exports.addVideo = async (req, res) => {
-  const { link, alt, title, modifiedTitle } = req.body;
+  const { link, alt, title, modifiedTitleVideo } = req.body;
   const file = req.file;
 
-  if (!link || !alt || !file || !title || !modifiedTitle) {
+  if (!link || !alt || !file || !title || !modifiedTitleVideo) {
     return res.status(400).json({ message: "Tous les champs sont requis." });
   }
 
@@ -33,7 +33,7 @@ exports.addVideo = async (req, res) => {
       alt,
       image: uploadResult.secure_url,
       title,
-      modifiedTitle,
+      modifiedTitleVideo,
     });
 
     await newVideo.save();
@@ -87,7 +87,7 @@ exports.findOneVideo = async (req, res) => {
 // Mettre à jour une vidéo
 exports.updateVideo = async (req, res) => {
   const { id } = req.params;
-  const { link, alt, title, modifiedTitle } = req.body;
+  const { link, alt, title, modifiedTitleVideo } = req.body;
   const file = req.file;
 
   try {
@@ -99,7 +99,7 @@ exports.updateVideo = async (req, res) => {
     if (link) updateData.link = link;
     if (alt) updateData.alt = alt;
     if (title) updateData.title = title;
-    if (modifiedTitle) updateData.modifiedTitle = modifiedTitle;
+    if (modifiedTitleVideo) updateData.modifiedTitleVideo = modifiedTitleVideo;
 
     if (Object.keys(updateData).length === 0 && !file) {
       return res

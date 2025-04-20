@@ -49,13 +49,7 @@ router.put("/social-links", auth, socialLinksController.updateSocialLinks);
 // BIO ROUTES
 
 router.get("/bio", bioController.getBio);
-router.put(
-  "/bio",
-  auth,
-  uploadImage,
-  convertImageToWebP,
-  bioController.updateBio
-);
+router.put("/bio", auth, uploadImage, bioController.updateBio);
 
 // PRESS ROUTES
 

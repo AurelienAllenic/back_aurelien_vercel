@@ -6,10 +6,6 @@ const videoSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    classVid: {
-      type: String,
-      required: true,
-    },
     alt: {
       type: String,
       required: true,

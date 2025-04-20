@@ -1,8 +1,9 @@
 const Video = require("../models/Video");
 const mongoose = require("mongoose");
 const cloudinary = require("cloudinary").v2;
+const fs = require("fs").promises;
 
-// Configure Cloudinary (ensure these are set in your environment variables)
+// Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -12,7 +13,7 @@ cloudinary.config({
 // Ajouter une vidéo
 exports.addVideo = async (req, res) => {
   const { index, link, classVid, alt, title, modifiedTitle } = req.body;
-  const file = req.file; // Assuming multer middleware provides the file
+  const file = req.file; // Provided by multer middleware
 
   if (
     !index ||
@@ -29,16 +30,26 @@ exports.addVideo = async (req, res) => {
   try {
     // Upload image to Cloudinary
     const uploadResult = await cloudinary.uploader.upload(file.path, {
-      folder: "captures_3d", // Optional: organize in a Cloudinary folder
+      folder: "captures_3d",
       resource_type: "image",
     });
+
+    // Clean up temporary file
+    try {
+      await fs.unlink(file.path);
+    } catch (cleanupError) {
+      console.warn(
+        "⚠️ Erreur lors du nettoyage du fichier temporaire :",
+        cleanupError
+      );
+    }
 
     const newVideo = new Video({
       index,
       link,
       classVid,
       alt,
-      image: uploadResult.secure_url, // Store Cloudinary URL
+      image: uploadResult.secure_url,
       title,
       modifiedTitle,
     });
@@ -50,6 +61,17 @@ exports.addVideo = async (req, res) => {
       .json({ message: "✅ Vidéo créée avec succès", data: newVideo });
   } catch (error) {
     console.error("❌ Erreur backend :", error);
+    // Clean up temporary file in case of error
+    if (file && file.path) {
+      try {
+        await fs.unlink(file.path);
+      } catch (cleanupError) {
+        console.warn(
+          "⚠️ Erreur lors du nettoyage du fichier temporaire :",
+          cleanupError
+        );
+      }
+    }
     res.status(400).json({
       message: "Erreur lors de la création de la vidéo",
       error: error.message,
@@ -63,6 +85,7 @@ exports.findAllVideos = async (req, res) => {
     const videos = await Video.find();
     res.status(200).json({ message: "Liste des vidéos", data: videos });
   } catch (error) {
+    console.error("❌ Erreur lors de la récupération des vidéos :", error);
     res.status(400).json({
       message: "Erreur lors de la récupération des vidéos",
       error: error.message,
@@ -82,6 +105,7 @@ exports.findOneVideo = async (req, res) => {
 
     res.status(200).json({ message: "Vidéo trouvée", data: video });
   } catch (error) {
+    console.error("❌ Erreur lors de la récupération de la vidéo :", error);
     res.status(400).json({
       message: "Erreur lors de la récupération de la vidéo",
       error: error.message,
@@ -93,7 +117,7 @@ exports.findOneVideo = async (req, res) => {
 exports.updateVideo = async (req, res) => {
   const { id } = req.params;
   const { index, link, classVid, alt, title, modifiedTitle } = req.body;
-  const file = req.file; // New image file, if provided
+  const file = req.file;
 
   try {
     if (!id) {
@@ -114,13 +138,48 @@ exports.updateVideo = async (req, res) => {
         .json({ message: "Aucune donnée à mettre à jour." });
     }
 
+    // Find existing video to get old image URL
+    const existingVideo = await Video.findById(id);
+    if (!existingVideo) {
+      return res.status(404).json({ message: "Vidéo non trouvée." });
+    }
+
     if (file) {
+      // Delete old image from Cloudinary if it exists
+      if (existingVideo.image) {
+        const oldPublicId = existingVideo.image
+          .split("/")
+          .slice(-2)
+          .join("/")
+          .split(".")[0];
+        try {
+          await cloudinary.uploader.destroy(oldPublicId, {
+            resource_type: "image",
+          });
+        } catch (cloudinaryError) {
+          console.warn(
+            "⚠️ Erreur lors de la suppression de l'ancienne image :",
+            cloudinaryError
+          );
+        }
+      }
+
       // Upload new image to Cloudinary
       const uploadResult = await cloudinary.uploader.upload(file.path, {
         folder: "captures_3d",
         resource_type: "image",
       });
       updateData.image = uploadResult.secure_url;
+
+      // Clean up temporary file
+      try {
+        await fs.unlink(file.path);
+      } catch (cleanupError) {
+        console.warn(
+          "⚠️ Erreur lors du nettoyage du fichier temporaire :",
+          cleanupError
+        );
+      }
     }
 
     const updatedVideo = await Video.findOneAndUpdate(
@@ -139,6 +198,17 @@ exports.updateVideo = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Erreur lors de la mise à jour :", error);
+    // Clean up temporary file in case of error
+    if (file && file.path) {
+      try {
+        await fs.unlink(file.path);
+      } catch (cleanupError) {
+        console.warn(
+          "⚠️ Erreur lors du nettoyage du fichier temporaire :",
+          cleanupError
+        );
+      }
+    }
     res.status(400).json({
       message: "Erreur lors de la mise à jour de la vidéo",
       error: error.message,
@@ -161,13 +231,20 @@ exports.deleteVideo = async (req, res) => {
       return res.status(404).json({ message: "Vidéo non trouvée." });
     }
 
-    // Extract public ID from Cloudinary URL and delete the image
+    // Delete image from Cloudinary if it exists
     if (video.image) {
-      const publicId = video.image.split("/").slice(-2).join("/").split(".")[0]; // Extract public ID (e.g., captures_3d/Capture_paro)
-      await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+      const publicId = video.image.split("/").slice(-2).join("/").split(".")[0];
+      try {
+        await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+      } catch (cloudinaryError) {
+        console.warn(
+          "⚠️ Erreur lors de la suppression de l'image Cloudinary :",
+          cloudinaryError
+        );
+      }
     }
 
-    // Delete the video from the database
+    // Delete video from database
     const result = await Video.deleteOne({ _id: id });
 
     if (result.deletedCount === 0) {

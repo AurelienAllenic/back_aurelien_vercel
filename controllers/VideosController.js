@@ -13,7 +13,7 @@ cloudinary.config({
 // Ajouter une vidéo
 exports.addVideo = async (req, res) => {
   const { index, link, classVid, alt, title, modifiedTitle } = req.body;
-  const file = req.file; // Provided by multer middleware
+  const file = req.file;
 
   if (
     !index ||
@@ -28,13 +28,13 @@ exports.addVideo = async (req, res) => {
   }
 
   try {
-    // Upload image to Cloudinary
+    // Upload image à Cloudinary
     const uploadResult = await cloudinary.uploader.upload(file.path, {
       folder: "captures_3d",
       resource_type: "image",
     });
 
-    // Clean up temporary file
+    // Supprimer le fichier temporaire
     try {
       await fs.unlink(file.path);
     } catch (cleanupError) {
@@ -61,7 +61,6 @@ exports.addVideo = async (req, res) => {
       .json({ message: "✅ Vidéo créée avec succès", data: newVideo });
   } catch (error) {
     console.error("❌ Erreur backend :", error);
-    // Clean up temporary file in case of error
     if (file && file.path) {
       try {
         await fs.unlink(file.path);
@@ -138,14 +137,13 @@ exports.updateVideo = async (req, res) => {
         .json({ message: "Aucune donnée à mettre à jour." });
     }
 
-    // Find existing video
     const existingVideo = await Video.findById(id);
     if (!existingVideo) {
       return res.status(404).json({ message: "Vidéo non trouvée." });
     }
 
     if (file) {
-      // Delete old image from Cloudinary
+      // Supprimer l'ancienne image de Cloudinary
       if (existingVideo.image) {
         const oldPublicId = existingVideo.image
           .split("/")
@@ -164,14 +162,14 @@ exports.updateVideo = async (req, res) => {
         }
       }
 
-      // Upload new image to Cloudinary
+      // Upload nouvelle image à Cloudinary
       const uploadResult = await cloudinary.uploader.upload(file.path, {
         folder: "captures_3d",
         resource_type: "image",
       });
       updateData.image = uploadResult.secure_url;
 
-      // Clean up temporary file
+      // Supprimer le fichier temporaire
       try {
         await fs.unlink(file.path);
       } catch (cleanupError) {
@@ -198,7 +196,6 @@ exports.updateVideo = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Erreur lors de la mise à jour :", error);
-    // Clean up temporary file in case of error
     if (file && file.path) {
       try {
         await fs.unlink(file.path);
@@ -225,13 +222,12 @@ exports.deleteVideo = async (req, res) => {
   }
 
   try {
-    // Find the video
     const video = await Video.findById(id);
     if (!video) {
       return res.status(404).json({ message: "Vidéo non trouvée." });
     }
 
-    // Delete image from Cloudinary
+    // Supprimer l'image de Cloudinary
     if (video.image) {
       const publicId = video.image.split("/").slice(-2).join("/").split(".")[0];
       try {
@@ -244,7 +240,7 @@ exports.deleteVideo = async (req, res) => {
       }
     }
 
-    // Delete video from database
+    // Supprimer la vidéo de la base de données
     const result = await Video.deleteOne({ _id: id });
 
     if (result.deletedCount === 0) {

@@ -9,9 +9,6 @@ const { uploadImage } = require("../middlewares/multerMiddleware");
 const socialLinksController = require("../controllers/socialLinksController");
 const bioController = require("../controllers/bioController");
 const pressController = require("../controllers/pressController");
-const {
-  convertImageToWebP,
-} = require("../middlewares/imageConversionMiddleware");
 const videoController = require("../controllers/VideosController");
 
 // RADIO ROUTES

@@ -138,14 +138,14 @@ exports.updateVideo = async (req, res) => {
         .json({ message: "Aucune donnée à mettre à jour." });
     }
 
-    // Find existing video to get old image URL
+    // Find existing video
     const existingVideo = await Video.findById(id);
     if (!existingVideo) {
       return res.status(404).json({ message: "Vidéo non trouvée." });
     }
 
     if (file) {
-      // Delete old image from Cloudinary if it exists
+      // Delete old image from Cloudinary
       if (existingVideo.image) {
         const oldPublicId = existingVideo.image
           .split("/")
@@ -225,13 +225,13 @@ exports.deleteVideo = async (req, res) => {
   }
 
   try {
-    // Find the video to get the image URL
+    // Find the video
     const video = await Video.findById(id);
     if (!video) {
       return res.status(404).json({ message: "Vidéo non trouvée." });
     }
 
-    // Delete image from Cloudinary if it exists
+    // Delete image from Cloudinary
     if (video.image) {
       const publicId = video.image.split("/").slice(-2).join("/").split(".")[0];
       try {

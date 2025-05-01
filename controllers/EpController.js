@@ -31,6 +31,28 @@ exports.addEp = async (req, res) => {
   }
 
   try {
+    // Convertir index en nombre
+    const newIndex = parseInt(index);
+    if (isNaN(newIndex) || newIndex < 1) {
+      return res
+        .status(400)
+        .json({ message: "L'index doit être un nombre positif." });
+    }
+
+    // Vérifier si l'index existe déjà
+    const existingEp = await Ep.findOne({ index: newIndex });
+    if (existingEp) {
+      // Trouver le prochain index disponible
+      const maxIndexEp = await Ep.findOne().sort({ index: -1 }).select("index");
+      const nextIndex = maxIndexEp ? maxIndexEp.index + 1 : 1;
+
+      // Mettre à jour l'EP existant avec le prochain index
+      await Ep.updateOne(
+        { _id: existingEp._id },
+        { $set: { index: nextIndex } }
+      );
+    }
+
     // Upload de l'image à Cloudinary
     const uploadResult = await cloudinary.uploader.upload(file.path, {
       folder: "ep_covers",
@@ -38,7 +60,7 @@ exports.addEp = async (req, res) => {
     });
 
     const newEp = new Ep({
-      index,
+      index: newIndex,
       image: uploadResult.secure_url,
       classImg: classImg || "img-single",
       title,
@@ -120,7 +142,6 @@ exports.updateEp = async (req, res) => {
     }
 
     const updateData = {};
-    if (index) updateData.index = index;
     if (title) updateData.title = title;
     if (author) updateData.author = author;
     if (compositor) updateData.compositor = compositor;
@@ -128,6 +149,32 @@ exports.updateEp = async (req, res) => {
     if (youtubeEmbed) updateData.youtubeEmbed = youtubeEmbed;
     if (social) updateData.social = JSON.parse(social);
     if (classImg) updateData.classImg = classImg;
+
+    // Gérer l'index si fourni
+    if (index) {
+      const newIndex = parseInt(index);
+      if (isNaN(newIndex) || newIndex < 1) {
+        return res
+          .status(400)
+          .json({ message: "L'index doit être un nombre positif." });
+      }
+
+      const existingEpWithIndex = await Ep.findOne({ index: newIndex });
+      if (existingEpWithIndex && existingEpWithIndex._id.toString() !== id) {
+        // Trouver le prochain index disponible
+        const maxIndexEp = await Ep.findOne()
+          .sort({ index: -1 })
+          .select("index");
+        const nextIndex = maxIndexEp ? maxIndexEp.index + 1 : 1;
+
+        // Mettre à jour l'EP existant avec le prochain index
+        await Ep.updateOne(
+          { _id: existingEpWithIndex._id },
+          { $set: { index: nextIndex } }
+        );
+      }
+      updateData.index = newIndex;
+    }
 
     if (Object.keys(updateData).length === 0 && !file) {
       return res

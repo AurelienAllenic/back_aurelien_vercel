@@ -10,6 +10,7 @@ const socialLinksController = require("../controllers/socialLinksController");
 const bioController = require("../controllers/bioController");
 const pressController = require("../controllers/pressController");
 const videoController = require("../controllers/VideosController");
+const epController = require("../controllers/EpController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -83,5 +84,12 @@ router.get("/videos", videoController.findAllVideos);
 router.get("/videos/:id", videoController.findOneVideo);
 router.put("/videos/:id", auth, uploadImage, videoController.updateVideo);
 router.delete("/videos/:id", auth, videoController.deleteVideo);
+
+// EP ROUTES
+router.post("/add-ep", auth, uploadImage, epController.addEp);
+router.get("/eps", epController.findAllEps);
+router.get("/eps/:id", epController.findOneEp);
+router.put("/eps/:id", auth, uploadImage, epController.updateEp);
+router.delete("/eps/:id", auth, epController.deleteEp);
 
 module.exports = router;

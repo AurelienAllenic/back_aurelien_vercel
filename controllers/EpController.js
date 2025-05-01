@@ -13,6 +13,9 @@ exports.addEp = async (req, res) => {
     youtubeEmbed,
     social,
     classImg,
+    description,
+    link,
+    ending,
   } = req.body;
   const file = req.file;
 
@@ -23,6 +26,9 @@ exports.addEp = async (req, res) => {
     !compositor ||
     !alt ||
     !youtubeEmbed ||
+    !description ||
+    !link ||
+    !ending ||
     !file
   ) {
     return res
@@ -68,6 +74,9 @@ exports.addEp = async (req, res) => {
       compositor,
       alt,
       youtubeEmbed,
+      description,
+      link,
+      ending,
       social: social ? JSON.parse(social) : {},
     });
 
@@ -133,6 +142,9 @@ exports.updateEp = async (req, res) => {
     youtubeEmbed,
     social,
     classImg,
+    description,
+    link,
+    ending,
   } = req.body;
   const file = req.file;
 
@@ -149,6 +161,9 @@ exports.updateEp = async (req, res) => {
     if (youtubeEmbed) updateData.youtubeEmbed = youtubeEmbed;
     if (social) updateData.social = JSON.parse(social);
     if (classImg) updateData.classImg = classImg;
+    if (description) updateData.description = description;
+    if (link) updateData.link = link;
+    if (ending) updateData.ending = ending;
 
     // Gérer l'index si fourni
     if (index) {

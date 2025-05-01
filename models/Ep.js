@@ -35,6 +35,18 @@ const epSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    description: {
+      type: String,
+      required: true,
+    },
+    link: {
+      type: String,
+      required: true,
+    },
+    ending: {
+      type: String,
+      required: true,
+    },
     social: {
       spotify: { type: String },
       deezer: { type: String },

@@ -45,7 +45,7 @@ const epSchema = new mongoose.Schema(
     },
     ending: {
       type: String,
-      required: true,
+      required: false,
     },
     social: {
       spotify: { type: String },

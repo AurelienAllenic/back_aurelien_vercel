@@ -19,6 +19,7 @@ exports.addEp = async (req, res) => {
   } = req.body;
   const file = req.file;
 
+  // Retirer ending des champs obligatoires
   if (
     !index ||
     !title ||
@@ -28,7 +29,6 @@ exports.addEp = async (req, res) => {
     !youtubeEmbed ||
     !description ||
     !link ||
-    !ending ||
     !file
   ) {
     return res
@@ -76,7 +76,7 @@ exports.addEp = async (req, res) => {
       youtubeEmbed,
       description,
       link,
-      ending,
+      ending: ending || "", // Gérer ending comme optionnel, chaîne vide par défaut
       social: social ? JSON.parse(social) : {},
     });
 
@@ -163,7 +163,7 @@ exports.updateEp = async (req, res) => {
     if (classImg) updateData.classImg = classImg;
     if (description) updateData.description = description;
     if (link) updateData.link = link;
-    if (ending) updateData.ending = ending;
+    if (ending !== undefined) updateData.ending = ending || ""; // Gérer ending explicitement
 
     // Gérer l'index si fourni
     if (index) {

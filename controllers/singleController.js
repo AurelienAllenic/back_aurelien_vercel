@@ -118,7 +118,6 @@ exports.findOneSingle = async (req, res) => {
   }
 };
 
-// Mettre à jour un single
 exports.updateSingle = async (req, res) => {
   const { id } = req.params;
   const {

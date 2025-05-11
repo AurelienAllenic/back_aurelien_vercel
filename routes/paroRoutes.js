@@ -95,9 +95,9 @@ router.delete("/eps/:id", auth, epController.deleteEp);
 
 // SINGLE ROUTES
 router.post("/add-single", auth, uploadImage, singleController.addSingle);
-router.get("/singles", epController.findAllEps);
-router.get("/singles/:id", epController.findOneEp);
-router.put("/singles/:id", auth, uploadImage, epController.updateEp);
-router.delete("/singles/:id", auth, epController.deleteEp);
+router.get("/singles", singleController.findAllSingles);
+router.get("/singles/:id", singleController.findOneSingle);
+router.put("/singles/:id", auth, uploadImage, singleController.updateSingle);
+router.delete("/singles/:id", auth, singleController.deleteSingle);
 
 module.exports = router;

@@ -11,6 +11,7 @@ const bioController = require("../controllers/bioController");
 const pressController = require("../controllers/pressController");
 const videoController = require("../controllers/VideosController");
 const epController = require("../controllers/EpController");
+const singleController = require("../controllers/SingleController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -91,5 +92,12 @@ router.get("/eps", epController.findAllEps);
 router.get("/eps/:id", epController.findOneEp);
 router.put("/eps/:id", auth, uploadImage, epController.updateEp);
 router.delete("/eps/:id", auth, epController.deleteEp);
+
+// SINGLE ROUTES
+router.post("/add-single", auth, uploadImage, singleController.addSingle);
+router.get("/singles", epController.findAllEps);
+router.get("/singles/:id", epController.findOneEp);
+router.put("/singles/:id", auth, uploadImage, epController.updateEp);
+router.delete("/singles/:id", auth, epController.deleteEp);
 
 module.exports = router;

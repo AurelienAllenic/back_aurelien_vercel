@@ -11,7 +11,7 @@ const bioController = require("../controllers/bioController");
 const pressController = require("../controllers/pressController");
 const videoController = require("../controllers/VideosController");
 const epController = require("../controllers/EpController");
-const singleController = require("../controllers/SingleController");
+const singleController = require("../controllers/singleController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);

@@ -12,6 +12,7 @@ const pressController = require("../controllers/pressController");
 const videoController = require("../controllers/VideosController");
 const epController = require("../controllers/EpController");
 const singleController = require("../controllers/singleController");
+const liveController = require("../controllers/LiveController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -99,5 +100,12 @@ router.get("/singles", singleController.findAllSingles);
 router.get("/singles/:id", singleController.findOneSingle);
 router.put("/singles/:id", auth, uploadImage, singleController.updateSingle);
 router.delete("/singles/:id", auth, singleController.deleteSingle);
+
+// LIVE ROUTES
+router.post("/add-live", auth, uploadImage, liveController.addLive);
+router.get("/lives", liveController.findAllLives);
+router.get("/lives/:id", liveController.findOneLive);
+router.put("/lives/:id", auth, uploadImage, liveController.updateLive);
+router.delete("/lives/:id", auth, liveController.deleteLive);
 
 module.exports = router;

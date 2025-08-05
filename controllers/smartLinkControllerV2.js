@@ -3,6 +3,7 @@ const SmartLink = require("../models/SmartLink");
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 const Folder = require("../models/Folder");
+const Trash = require("../models/Trash");
 
 // Ajouter un lien
 exports.addSmartLink = async (req, res) => {
@@ -181,27 +182,41 @@ exports.deleteSmartLink = async (req, res) => {
   }
 
   try {
-    // ✅ Récupérer le SmartLink pour voir s'il est dans un dossier
-    const smartLink = await SmartLinkV2.findById(id);
+    // ✅ Chercher d'abord dans SmartLinkV2, puis dans SmartLink V1
+    let smartLink = await SmartLinkV2.findById(id);
+    let entityType = "SmartLinkV2";
+
+    if (!smartLink) {
+      smartLink = await SmartLink.findById(id);
+      entityType = "SmartLink";
+    }
+
     if (!smartLink) {
       return res.status(404).json({ message: "SmartLink non trouvé." });
     }
 
-    // ✅ Si le SmartLink est dans un dossier, le retirer du champ `smartLinks`
-    if (smartLink.folder) {
+    // ✅ Retirer du dossier si applicable (seulement pour V2)
+    if (entityType === "SmartLinkV2" && smartLink.folder) {
       await Folder.findByIdAndUpdate(smartLink.folder, {
-        $pull: { smartLinks: id }, // Retire l'ID du SmartLink de la liste des SmartLinks du dossier
+        $pull: { smartLinks: id },
       });
     }
 
-    // ✅ Supprimer le SmartLink de la base de données
-    const result = await SmartLinkV2.deleteOne({ _id: id });
+    // ✅ Sauvegarder dans la corbeille
+    await Trash.create({
+      entityType,
+      originalId: smartLink._id,
+      data: smartLink.toObject(),
+    });
 
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ message: "SmartLink non trouvé." });
+    // ✅ Supprimer l'entrée d’origine
+    if (entityType === "SmartLinkV2") {
+      await SmartLinkV2.deleteOne({ _id: id });
+    } else {
+      await SmartLink.deleteOne({ _id: id });
     }
 
-    res.status(200).json({ message: "✅ SmartLink supprimé avec succès." });
+    res.status(200).json({ message: `✅ ${entityType} mis à la corbeille avec succès.` });
   } catch (error) {
     console.error("❌ Erreur lors de la suppression du SmartLink :", error);
     res.status(400).json({

@@ -13,6 +13,7 @@ const videoController = require("../controllers/VideosController");
 const epController = require("../controllers/EpController");
 const singleController = require("../controllers/singleController");
 const liveController = require("../controllers/LiveController");
+const trashController = require("../controllers/trashController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -107,5 +108,10 @@ router.get("/lives", liveController.findAllLives);
 router.get("/lives/:id", liveController.findOneLive);
 router.put("/lives/:id", auth, uploadImage, liveController.updateLive);
 router.delete("/lives/:id", auth, liveController.deleteLive);
+
+// TRASH ROUTES
+router.get("/", trashController.getAllTrashedItems);
+router.post("/restore/:id", trashController.restoreItem);
+router.delete("/:id", trashController.permanentlyDeleteItem);
 
 module.exports = router;

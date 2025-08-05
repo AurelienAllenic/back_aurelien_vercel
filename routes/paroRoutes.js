@@ -110,8 +110,8 @@ router.put("/lives/:id", auth, uploadImage, liveController.updateLive);
 router.delete("/lives/:id", auth, liveController.deleteLive);
 
 // TRASH ROUTES
-router.get("/", trashController.getAllTrashedItems);
-router.post("/restore/:id", trashController.restoreItem);
-router.delete("/:id", trashController.permanentlyDeleteItem);
+router.get("/trash", trashController.getAllTrashedItems);
+router.post("/restore-trash/:id", trashController.restoreItem);
+router.delete("/delete-trash/:id", trashController.permanentlyDeleteItem);
 
 module.exports = router;

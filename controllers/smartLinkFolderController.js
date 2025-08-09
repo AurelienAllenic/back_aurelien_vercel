@@ -139,7 +139,7 @@ exports.deleteFolder = async (req, res) => {
   }
 
   try {
-    // 🔄 Récupérer tous les sous-dossiers récursivement
+    // Récupérer tous les sous-dossiers récursivement
     const getAllSubfolders = async (folderId) => {
       let subfolders = await Folder.find({ parentFolder: folderId });
       for (const subfolder of subfolders) {
@@ -154,19 +154,35 @@ exports.deleteFolder = async (req, res) => {
 
     console.log("📌 Dossiers supprimés :", allFolderIds);
 
-    // 🗑 Supprimer ou détacher les SmartLinks
     if (!deleteSmartLinks) {
+      // Détacher les SmartLinks des dossiers supprimés
       await SmartLinkV2.updateMany(
         { folder: { $in: allFolderIds } },
         { $unset: { folder: 1 } }
       );
       console.log("✅ SmartLinks détachés des dossiers supprimés.");
     } else {
-      await SmartLinkV2.deleteMany({ folder: { $in: allFolderIds } });
-      console.log("✅ SmartLinks supprimés avec leurs dossiers.");
+      // Récupérer les SmartLinks à supprimer
+      const smartLinksToDelete = await SmartLinkV2.find({
+        folder: { $in: allFolderIds },
+      });
+
+      // Pour chaque SmartLink, la déplacer dans la corbeille puis supprimer
+      for (const smartLink of smartLinksToDelete) {
+        // Sauvegarder dans la corbeille
+        await Trash.create({
+          entityType: "SmartLinkV2",
+          originalId: smartLink._id,
+          data: smartLink.toObject(),
+        });
+        // Supprimer l'entrée d'origine
+        await SmartLinkV2.deleteOne({ _id: smartLink._id });
+      }
+
+      console.log("✅ SmartLinks déplacés à la corbeille avec leurs dossiers.");
     }
 
-    // 🗑 Supprimer tous les sous-dossiers + le dossier cible
+    // Supprimer tous les sous-dossiers + le dossier cible
     await Folder.deleteMany({ _id: { $in: allFolderIds } });
 
     res

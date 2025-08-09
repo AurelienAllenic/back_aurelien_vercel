@@ -29,9 +29,6 @@ exports.getAllTrashedItems = async (req, res) => {
   }
 };
 
-/**
- * Restaure un élément de la corbeille
- */
 exports.restoreItem = async (req, res) => {
   try {
     const trashItem = await Trash.findById(req.params.id);
@@ -47,22 +44,28 @@ exports.restoreItem = async (req, res) => {
         .status(400)
         .json({ message: "Type d'entité inconnu : " + entityType });
 
-    // On vérifie que l'élément n'existe pas déjà
     const exists = await Model.findById(originalId);
     if (exists)
       return res
         .status(409)
         .json({ message: `${entityType} existe déjà avec cet ID` });
 
-    // On restaure l'élément supprimé
-    await Model.create({ ...data, _id: originalId });
+    // Nettoyage possible du data (optionnel, adapte selon ton modèle)
+    // Par exemple, on peut supprimer _id du data pour éviter doublon
+    const dataToRestore = { ...data };
+    delete dataToRestore._id; // On laisse MongoDB utiliser originalId
+
+    // Pour atomicité, utilise session si MongoDB supporte transactions
+    // Sinon, simple opération
+    await Model.create({ ...dataToRestore, _id: originalId });
     await Trash.findByIdAndDelete(req.params.id);
 
-    res.status(200).json({ message: `${entityType} restauré avec succès` });
+    return res
+      .status(200)
+      .json({ message: `${entityType} restauré avec succès` });
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Erreur lors de la restauration", error: err.message });
+    console.error("Erreur restauration :", err);
+    return res.status(500).json({ message: "Erreur lors de la restauration" });
   }
 };
 

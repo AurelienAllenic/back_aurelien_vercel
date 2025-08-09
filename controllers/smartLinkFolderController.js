@@ -129,16 +129,25 @@ exports.updateFolder = async (req, res) => {
 
 exports.deleteFolder = async (req, res) => {
   const { id } = req.params;
-  const { deleteSmartLinks } = req.body;
+  const { deleteSmartLinks } = req.body; // false, true, "justFolder"
 
   console.log("📥 Suppression du dossier :", id);
-  console.log("📌 Supprimer les SmartLinks associés ?", deleteSmartLinks);
+  console.log("📌 Mode :", deleteSmartLinks);
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "ID invalide." });
   }
 
   try {
+    // Cas 1 : juste supprimer le dossier, rien d'autre
+    if (deleteSmartLinks === "justFolder") {
+      await Folder.deleteOne({ _id: id });
+      console.log("✅ Seulement le dossier supprimé, contenu intact.");
+      return res.status(200).json({
+        message: "Dossier supprimé, sous-dossiers et SmartLinks conservés.",
+      });
+    }
+
     // 🔄 Récupérer tous les sous-dossiers récursivement
     const getAllSubfolders = async (folderId) => {
       let subfolders = await Folder.find({ parentFolder: folderId });
@@ -154,24 +163,42 @@ exports.deleteFolder = async (req, res) => {
 
     console.log("📌 Dossiers supprimés :", allFolderIds);
 
-    // 🗑 Supprimer ou détacher les SmartLinks
+    // Cas 2 : détacher les SmartLinks
     if (!deleteSmartLinks) {
       await SmartLinkV2.updateMany(
         { folder: { $in: allFolderIds } },
         { $unset: { folder: 1 } }
       );
       console.log("✅ SmartLinks détachés des dossiers supprimés.");
-    } else {
-      await SmartLinkV2.deleteMany({ folder: { $in: allFolderIds } });
-      console.log("✅ SmartLinks supprimés avec leurs dossiers.");
     }
 
-    // 🗑 Supprimer tous les sous-dossiers + le dossier cible
+    // Cas 3 : supprimer les SmartLinks en les envoyant dans la corbeille
+    if (deleteSmartLinks === true) {
+      const smartLinks = await SmartLinkV2.find({
+        folder: { $in: allFolderIds },
+      });
+
+      for (const sl of smartLinks) {
+        // Sauvegarde dans la corbeille
+        await Trash.create({
+          entityType: "SmartLinkV2",
+          originalId: sl._id,
+          data: sl.toObject(),
+        });
+
+        // Suppression réelle
+        await SmartLinkV2.deleteOne({ _id: sl._id });
+      }
+
+      console.log(`✅ ${smartLinks.length} SmartLinks envoyés à la corbeille.`);
+    }
+
+    // Supprimer les dossiers
     await Folder.deleteMany({ _id: { $in: allFolderIds } });
 
-    res
-      .status(200)
-      .json({ message: "Dossier et sous-dossiers supprimés avec succès." });
+    res.status(200).json({
+      message: "Suppression effectuée avec succès.",
+    });
   } catch (error) {
     console.error("❌ Erreur lors de la suppression du dossier :", error);
     res.status(400).json({

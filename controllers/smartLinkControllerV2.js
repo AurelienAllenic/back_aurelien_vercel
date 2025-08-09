@@ -249,7 +249,6 @@ exports.deleteFolder = async (req, res) => {
       });
     }
 
-    // --- Récupération récursive des sous-dossiers (pour autres modes) ---
     const getAllSubfolders = async (folderId) => {
       let subfolders = await Folder.find({ parentFolder: folderId });
       let allSubfolders = [...subfolders];

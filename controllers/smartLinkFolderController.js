@@ -129,96 +129,49 @@ exports.updateFolder = async (req, res) => {
 
 exports.deleteFolder = async (req, res) => {
   const { id } = req.params;
-  const { deleteSmartLinks } = req.body; // false, true, "justFolder"
+  const { deleteSmartLinks } = req.body;
+
+  console.log("📥 Suppression du dossier :", id);
+  console.log("📌 Supprimer les SmartLinks associés ?", deleteSmartLinks);
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "ID invalide." });
   }
 
   try {
-    // --- MODE "justFolder" ---
-    if (deleteSmartLinks === "justFolder") {
-      await Folder.deleteOne({ _id: id });
-
-      // Détacher uniquement les SmartLinks liés à ce dossier
-      await Promise.all([
-        SmartLinkV2.updateMany({ folder: id }, { $unset: { folder: 1 } }),
-        SmartLink.updateMany({ folder: id }, { $unset: { folder: 1 } }),
-      ]);
-
-      console.log("✅ Dossier supprimé, contenu conservé.");
-      return res.status(200).json({
-        message: "Dossier supprimé, sous-dossiers et SmartLinks conservés.",
-      });
-    }
-
-    // --- Récupération récursive des sous-dossiers ---
+    // 🔄 Récupérer tous les sous-dossiers récursivement
     const getAllSubfolders = async (folderId) => {
       let subfolders = await Folder.find({ parentFolder: folderId });
       for (const subfolder of subfolders) {
-        const nested = await getAllSubfolders(subfolder._id);
-        subfolders = subfolders.concat(nested);
+        const nestedSubfolders = await getAllSubfolders(subfolder._id);
+        subfolders = subfolders.concat(nestedSubfolders);
       }
       return subfolders;
     };
 
     const subfolders = await getAllSubfolders(id);
-    const allFolderIds = [id, ...subfolders.map((f) => f._id)];
+    const allFolderIds = [id, ...subfolders.map((folder) => folder._id)];
 
-    // --- Cas où on garde les SmartLinks ---
+    console.log("📌 Dossiers supprimés :", allFolderIds);
+
+    // 🗑 Supprimer ou détacher les SmartLinks
     if (!deleteSmartLinks) {
-      await Promise.all([
-        SmartLinkV2.updateMany(
-          { folder: { $in: allFolderIds } },
-          { $unset: { folder: 1 } }
-        ),
-        SmartLink.updateMany(
-          { folder: { $in: allFolderIds } },
-          { $unset: { folder: 1 } }
-        ),
-      ]);
-      console.log("✅ SmartLinks détachés.");
+      await SmartLinkV2.updateMany(
+        { folder: { $in: allFolderIds } },
+        { $unset: { folder: 1 } }
+      );
+      console.log("✅ SmartLinks détachés des dossiers supprimés.");
+    } else {
+      await SmartLinkV2.deleteMany({ folder: { $in: allFolderIds } });
+      console.log("✅ SmartLinks supprimés avec leurs dossiers.");
     }
 
-    // --- Cas où on supprime les SmartLinks ---
-    if (deleteSmartLinks === true) {
-      const [linksV2, linksV1] = await Promise.all([
-        SmartLinkV2.find({ folder: { $in: allFolderIds } }),
-        SmartLink.find({ folder: { $in: allFolderIds } }),
-      ]);
-
-      // Construction de tous les documents Trash en une seule fois
-      const trashData = [
-        ...linksV2.map((doc) => ({
-          entityType: "SmartLinkV2",
-          originalId: doc._id,
-          data: doc.toObject(),
-        })),
-        ...linksV1.map((doc) => ({
-          entityType: "SmartLink",
-          originalId: doc._id,
-          data: doc.toObject(),
-        })),
-      ];
-
-      // Insertion groupée dans Trash
-      if (trashData.length > 0) {
-        await Trash.insertMany(trashData);
-      }
-
-      // Suppression groupée
-      await Promise.all([
-        SmartLinkV2.deleteMany({ folder: { $in: allFolderIds } }),
-        SmartLink.deleteMany({ folder: { $in: allFolderIds } }),
-      ]);
-
-      console.log(`✅ ${trashData.length} SmartLinks envoyés à la corbeille.`);
-    }
-
-    // --- Suppression des dossiers ---
+    // 🗑 Supprimer tous les sous-dossiers + le dossier cible
     await Folder.deleteMany({ _id: { $in: allFolderIds } });
 
-    res.status(200).json({ message: "Suppression effectuée avec succès." });
+    res
+      .status(200)
+      .json({ message: "Dossier et sous-dossiers supprimés avec succès." });
   } catch (error) {
     console.error("❌ Erreur lors de la suppression du dossier :", error);
     res.status(400).json({

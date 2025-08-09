@@ -1,6 +1,7 @@
 const Folder = require("../models/Folder");
 const mongoose = require("mongoose");
 const SmartLinkV2 = require("../models/SmartLinkV2");
+const Trash = require("../models/Trash");
 
 // ✅ Ajouter un dossier
 exports.addFolder = async (req, res) => {

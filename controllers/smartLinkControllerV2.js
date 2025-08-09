@@ -174,53 +174,155 @@ exports.updateSmartLink = async (req, res) => {
   }
 };
 
-exports.deleteSmartLink = async (req, res) => {
+exports.deleteFolder = async (req, res) => {
   const { id } = req.params;
+  const { deleteSmartLinks } = req.body;
+
+  console.log("📥 Suppression du dossier :", id);
+  console.log("📌 Supprimer les SmartLinks associés ?", deleteSmartLinks);
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "ID invalide." });
   }
 
   try {
-    // ✅ Chercher d'abord dans SmartLinkV2, puis dans SmartLink V1
-    let smartLink = await SmartLinkV2.findById(id);
-    let entityType = "SmartLinkV2";
+    // Convert id to ObjectId
+    const folderId = new mongoose.Types.ObjectId(id);
 
-    if (!smartLink) {
-      smartLink = await SmartLink.findById(id);
-      entityType = "SmartLink";
+    // Check if folder exists
+    const folder = await Folder.findById(folderId);
+    if (!folder) {
+      console.log("Folder not found:", id);
+      return res.status(404).json({ message: "Dossier non trouvé." });
     }
 
-    if (!smartLink) {
-      return res.status(404).json({ message: "SmartLink non trouvé." });
-    }
+    // --- MODE "onlyFolderWithTrash" ---
+    if (deleteSmartLinks === "onlyFolderWithTrash") {
+      // Find SmartLinks directly associated with this folder
+      const [linksV2, linksV1] = await Promise.all([
+        SmartLinkV2.find({ folder: folderId }),
+        SmartLink.find({ folder: folderId }),
+      ]);
 
-    // ✅ Retirer du dossier si applicable (seulement pour V2)
-    if (entityType === "SmartLinkV2" && smartLink.folder) {
-      await Folder.findByIdAndUpdate(smartLink.folder, {
-        $pull: { smartLinks: id },
+      // Move SmartLinks to Trash
+      const trashData = [
+        ...linksV2.map((doc) => ({
+          entityType: "SmartLinkV2",
+          originalId: doc._id,
+          data: doc.toObject(),
+        })),
+        ...linksV1.map((doc) => ({
+          entityType: "SmartLink",
+          originalId: doc._id,
+          data: doc.toObject(),
+        })),
+      ];
+
+      if (trashData.length > 0) {
+        await Trash.insertMany(trashData);
+        console.log(
+          `✅ ${trashData.length} SmartLinks envoyés à la corbeille.`
+        );
+      }
+
+      // Delete SmartLinks associated with this folder
+      await Promise.all([
+        SmartLinkV2.deleteMany({ folder: folderId }),
+        SmartLink.deleteMany({ folder: folderId }),
+      ]);
+
+      // Update subfolders to remove parent reference
+      await Folder.updateMany(
+        { parentFolder: folderId },
+        { $unset: { parentFolder: 1 } }
+      );
+
+      // Delete only the target folder
+      await Folder.deleteOne({ _id: folderId });
+
+      console.log(
+        "✅ Dossier supprimé, SmartLinks envoyés à la corbeille, sous-dossiers conservés."
+      );
+      return res.status(200).json({
+        message:
+          "Dossier supprimé, SmartLinks envoyés à la corbeille, sous-dossiers conservés.",
       });
     }
 
-    // ✅ Sauvegarder dans la corbeille
-    await Trash.create({
-      entityType,
-      originalId: smartLink._id,
-      data: smartLink.toObject(),
-    });
+    // --- Récupération récursive des sous-dossiers (pour autres modes) ---
+    const getAllSubfolders = async (folderId) => {
+      let subfolders = await Folder.find({ parentFolder: folderId });
+      let allSubfolders = [...subfolders];
+      for (const subfolder of subfolders) {
+        const nested = await getAllSubfolders(subfolder._id);
+        allSubfolders = allSubfolders.concat(nested);
+      }
+      return allSubfolders;
+    };
 
-    // ✅ Supprimer l'entrée d’origine
-    if (entityType === "SmartLinkV2") {
-      await SmartLinkV2.deleteOne({ _id: id });
-    } else {
-      await SmartLink.deleteOne({ _id: id });
+    const subfolders = await getAllSubfolders(folderId);
+    const allFolderIds = [folderId, ...subfolders.map((f) => f._id)];
+
+    console.log("📌 Dossiers supprimés :", allFolderIds);
+
+    // --- Cas où on garde les SmartLinks ---
+    if (deleteSmartLinks === false) {
+      await Promise.all([
+        SmartLinkV2.updateMany(
+          { folder: { $in: allFolderIds } },
+          { $unset: { folder: 1 } }
+        ),
+        SmartLink.updateMany(
+          { folder: { $in: allFolderIds } },
+          { $unset: { folder: 1 } }
+        ),
+      ]);
+      console.log("✅ SmartLinks détachés des dossiers supprimés.");
     }
 
-    res.status(200).json({ message: `✅ ${entityType} mis à la corbeille avec succès.` });
+    // --- Cas où on supprime les SmartLinks ---
+    if (deleteSmartLinks === true) {
+      const [linksV2, linksV1] = await Promise.all([
+        SmartLinkV2.find({ folder: { $in: allFolderIds } }),
+        SmartLink.find({ folder: { $in: allFolderIds } }),
+      ]);
+
+      const trashData = [
+        ...linksV2.map((doc) => ({
+          entityType: "SmartLinkV2",
+          originalId: doc._id,
+          data: doc.toObject(),
+        })),
+        ...linksV1.map((doc) => ({
+          entityType: "SmartLink",
+          originalId: doc._id,
+          data: doc.toObject(),
+        })),
+      ];
+
+      if (trashData.length > 0) {
+        await Trash.insertMany(trashData);
+        console.log(
+          `✅ ${trashData.length} SmartLinks envoyés à la corbeille.`
+        );
+      }
+
+      await Promise.all([
+        SmartLinkV2.deleteMany({ folder: { $in: allFolderIds } }),
+        SmartLink.deleteMany({ folder: { $in: allFolderIds } }),
+      ]);
+    }
+
+    // --- Suppression des dossiers ---
+    await Folder.deleteMany({ _id: { $in: allFolderIds } });
+
+    res
+      .status(200)
+      .json({ message: "Dossier et sous-dossiers supprimés avec succès." });
   } catch (error) {
-    console.error("❌ Erreur lors de la suppression du SmartLink :", error);
+    console.error("❌ Erreur lors de la suppression du dossier :", error);
     res.status(400).json({
-      message: "Erreur lors de la suppression du SmartLink",
+      message: "Erreur lors de la suppression du dossier",
       error: error.message,
     });
   }

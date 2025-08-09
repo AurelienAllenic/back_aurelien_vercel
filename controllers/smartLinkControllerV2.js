@@ -177,34 +177,23 @@ exports.updateSmartLink = async (req, res) => {
 exports.deleteFolder = async (req, res) => {
   const { id } = req.params;
   const { deleteSmartLinks } = req.body;
-
   console.log("📥 Suppression du dossier :", id);
   console.log("📌 Supprimer les SmartLinks associés ?", deleteSmartLinks);
-
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "ID invalide." });
   }
-
   try {
-    // Convert id to ObjectId
     const folderId = new mongoose.Types.ObjectId(id);
-
-    // Check if folder exists
     const folder = await Folder.findById(folderId);
     if (!folder) {
       console.log("Folder not found:", id);
       return res.status(404).json({ message: "Dossier non trouvé." });
     }
-
-    // --- MODE "onlyFolderWithTrash" ---
     if (deleteSmartLinks === "onlyFolderWithTrash") {
-      // Find SmartLinks directly associated with this folder
       const [linksV2, linksV1] = await Promise.all([
         SmartLinkV2.find({ folder: folderId }),
         SmartLink.find({ folder: folderId }),
       ]);
-
-      // Move SmartLinks to Trash
       const trashData = [
         ...linksV2.map((doc) => ({
           entityType: "SmartLinkV2",
@@ -217,29 +206,18 @@ exports.deleteFolder = async (req, res) => {
           data: doc.toObject(),
         })),
       ];
-
       if (trashData.length > 0) {
         await Trash.insertMany(trashData);
-        console.log(
-          `✅ ${trashData.length} SmartLinks envoyés à la corbeille.`
-        );
       }
-
-      // Delete SmartLinks associated with this folder
       await Promise.all([
         SmartLinkV2.deleteMany({ folder: folderId }),
         SmartLink.deleteMany({ folder: folderId }),
       ]);
-
-      // Update subfolders to remove parent reference
       await Folder.updateMany(
         { parentFolder: folderId },
         { $unset: { parentFolder: 1 } }
       );
-
-      // Delete only the target folder
       await Folder.deleteOne({ _id: folderId });
-
       console.log(
         "✅ Dossier supprimé, SmartLinks envoyés à la corbeille, sous-dossiers conservés."
       );
@@ -248,7 +226,6 @@ exports.deleteFolder = async (req, res) => {
           "Dossier supprimé, SmartLinks envoyés à la corbeille, sous-dossiers conservés.",
       });
     }
-
     const getAllSubfolders = async (folderId) => {
       let subfolders = await Folder.find({ parentFolder: folderId });
       let allSubfolders = [...subfolders];
@@ -258,13 +235,9 @@ exports.deleteFolder = async (req, res) => {
       }
       return allSubfolders;
     };
-
     const subfolders = await getAllSubfolders(folderId);
     const allFolderIds = [folderId, ...subfolders.map((f) => f._id)];
-
     console.log("📌 Dossiers supprimés :", allFolderIds);
-
-    // --- Cas où on garde les SmartLinks ---
     if (deleteSmartLinks === false) {
       await Promise.all([
         SmartLinkV2.updateMany(
@@ -278,14 +251,11 @@ exports.deleteFolder = async (req, res) => {
       ]);
       console.log("✅ SmartLinks détachés des dossiers supprimés.");
     }
-
-    // --- Cas où on supprime les SmartLinks ---
     if (deleteSmartLinks === true) {
       const [linksV2, linksV1] = await Promise.all([
         SmartLinkV2.find({ folder: { $in: allFolderIds } }),
         SmartLink.find({ folder: { $in: allFolderIds } }),
       ]);
-
       const trashData = [
         ...linksV2.map((doc) => ({
           entityType: "SmartLinkV2",
@@ -298,23 +268,15 @@ exports.deleteFolder = async (req, res) => {
           data: doc.toObject(),
         })),
       ];
-
       if (trashData.length > 0) {
         await Trash.insertMany(trashData);
-        console.log(
-          `✅ ${trashData.length} SmartLinks envoyés à la corbeille.`
-        );
       }
-
       await Promise.all([
         SmartLinkV2.deleteMany({ folder: { $in: allFolderIds } }),
         SmartLink.deleteMany({ folder: { $in: allFolderIds } }),
       ]);
     }
-
-    // --- Suppression des dossiers ---
     await Folder.deleteMany({ _id: { $in: allFolderIds } });
-
     res
       .status(200)
       .json({ message: "Dossier et sous-dossiers supprimés avec succès." });

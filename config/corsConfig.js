@@ -7,7 +7,7 @@ const corsOptions = {
       "https://www.aurelienallenic.fr",
       "https://paro-officiel.com",
       "https://paro-musique.com",
-      "https://www.paro-musique.com/",
+      "https://www.paro-musique.com",
     ];
 
     if (!origin || allowedOrigins.includes(origin)) {

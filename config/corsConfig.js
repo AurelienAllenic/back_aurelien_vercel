@@ -34,6 +34,7 @@ const corsConfig = (req, res, next) => {
     // Pour toutes les requêtes, set Access-Control-Allow-Origin avec l'origine validée
     const origin = req.headers.origin;
     if (origin && allowedPatterns.some((pattern) => pattern.test(origin))) {
+      console.log("Origin reçu dans req.headers.origin:", req.headers.origin);
       res.header("Access-Control-Allow-Origin", origin);
     }
 

@@ -7,7 +7,8 @@ const corsOptions = {
       "http://localhost:5173",
       "http://localhost:5174",
       "https://paro-officiel.com",
-      "https://paro-musique.com",
+      /^https:\/\/(www\.)?paro-officiel\.com$/,
+      /^https:\/\/(www\.)?paro-musique\.com$/
     ];
 
     if (!origin || allowedOrigins.includes(origin)) {

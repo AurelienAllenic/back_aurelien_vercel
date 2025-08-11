@@ -9,8 +9,11 @@ const allowedPatterns = [
 const corsOptions = {
   origin: function (origin, callback) {
     console.log("Origin reçu :", origin);
-    if (!origin || allowedPatterns.some((pattern) => pattern.test(origin))) {
+    if (!origin) {
+      // Pas d'origine, autoriser (ex: backend calls)
       callback(null, true);
+    } else if (allowedPatterns.some((pattern) => pattern.test(origin))) {
+      callback(null, origin);
     } else {
       callback(new Error("CORS policy: Origin not allowed"));
     }
@@ -21,16 +24,30 @@ const corsOptions = {
 };
 
 const corsConfig = (req, res, next) => {
-  cors(corsOptions)(req, res, () => {
-    if (req.method === "OPTIONS") {
-      res.header("Access-Control-Allow-Origin", req.headers.origin);
-      res.header(
-        "Access-Control-Allow-Methods",
-        "GET, POST, PUT, DELETE, OPTIONS"
-      );
-      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-      return res.status(200).send();
+  cors(corsOptions)(req, res, (err) => {
+    if (err) {
+      // Si erreur CORS, envoyer 403
+      res.status(403).send(err.message);
+      return;
     }
+
+    // Pour toutes les requêtes, set Access-Control-Allow-Origin avec l'origine validée
+    const origin = req.headers.origin;
+    if (origin && allowedPatterns.some((pattern) => pattern.test(origin))) {
+      res.header("Access-Control-Allow-Origin", origin);
+    }
+
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS"
+    );
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
+
     next();
   });
 };

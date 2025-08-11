@@ -11,7 +11,11 @@ const corsOptions = {
       /^https:\/\/(www\.)?paro-musique\.com$/
     ];
 
-    if (!origin || allowedOrigins.includes(origin)) {
+    const isAllowed = !origin || allowedOrigins.some(o =>
+      o instanceof RegExp ? o.test(origin) : o === origin
+    );
+
+    if (isAllowed) {
       callback(null, true);
     } else {
       callback(new Error("CORS policy: Origin not allowed"));

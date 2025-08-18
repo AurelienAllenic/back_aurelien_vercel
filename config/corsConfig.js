@@ -10,30 +10,17 @@ const corsOptions = {
       "https://paro-musique.com",
     ];
 
+    // Autoriser les requêtes sans origine (comme Postman) ou celles dans allowedOrigins
     if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
+      callback(null, origin || true); // Renvoyer l'origine exacte ou true pour les requêtes sans origine
     } else {
       callback(new Error("CORS policy: Origin not allowed"));
     }
   },
-  credentials: true,
+  credentials: true, // Nécessaire pour les cookies ou l'authentification
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
-const corsConfig = (req, res, next) => {
-  cors(corsOptions)(req, res, () => {
-    if (req.method === "OPTIONS") {
-      res.header("Access-Control-Allow-Origin", "*");
-      res.header(
-        "Access-Control-Allow-Methods",
-        "GET, POST, PUT, DELETE, OPTIONS"
-      );
-      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-      return res.status(200).send();
-    }
-    next();
-  });
-};
-
-module.exports = corsConfig;
+// Utiliser le middleware cors directement
+module.exports = cors(corsOptions);

@@ -16,8 +16,6 @@ if (process.env.NODE_ENV === "development") {
 
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log("Origin reçu :", origin);
-
     // Autoriser si origin est undefined (Postman, bookmark, Google)
     if (!origin) return callback(null, true);
 

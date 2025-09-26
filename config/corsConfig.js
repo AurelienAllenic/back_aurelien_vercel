@@ -6,10 +6,23 @@ const allowedPatterns = [
   /^https:\/\/(www\.)?paro-musique\.com$/,
 ];
 
+// Ajouter localhost uniquement en développement
+if (process.env.NODE_ENV === "development") {
+  allowedPatterns.push(/^http:\/\/localhost:5173$/);
+  allowedPatterns.push(/^http:\/\/127\.0\.0\.1:5173$/);
+}
+
 const corsOptions = {
   origin: function (origin, callback) {
     console.log("Origin reçu :", origin);
-    if (!origin || allowedPatterns.some((pattern) => pattern.test(origin))) {
+
+    // Si origin est undefined (ex: Postman, server-to-server), on autorise
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const isAllowed = allowedPatterns.some((pattern) => pattern.test(origin));
+    if (isAllowed) {
       console.log("Origine autorisée :", origin);
       callback(null, true);
     } else {
@@ -26,7 +39,7 @@ const corsOptions = {
 module.exports = [
   cors(corsOptions),
   (req, res, next) => {
-    res.setHeader("Vary", "Origin"); // Ajoute Vary: Origin pour le cache
+    res.setHeader("Vary", "Origin"); // pour le cache
     next();
   },
 ];

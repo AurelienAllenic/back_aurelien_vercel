@@ -16,8 +16,9 @@ const corsOptions = {
   origin: function (origin, callback) {
     console.log("Origin reçu :", origin);
 
-    // Si origin est undefined (ex: Postman, server-to-server), on autorise
+    // Autoriser si origin est undefined (ex: liens Google, bookmark, server-to-server)
     if (!origin) {
+      console.log("Origine undefined autorisée (bookmark ou recherche Google)");
       return callback(null, true);
     }
 
@@ -39,7 +40,7 @@ const corsOptions = {
 module.exports = [
   cors(corsOptions),
   (req, res, next) => {
-    res.setHeader("Vary", "Origin"); // pour le cache
+    res.setHeader("Vary", "Origin"); // pour le cache côté CDN
     next();
   },
 ];

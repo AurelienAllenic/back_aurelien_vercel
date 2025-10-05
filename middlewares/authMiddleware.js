@@ -1,15 +1,17 @@
-require('dotenv').config();
-const jwt = require('jsonwebtoken'); 
 module.exports = (req, res, next) => {
-    try {
-        const token = req.headers.authorization.split(' ')[1];
-        const decodedToken = jwt.verify(token, process.env.RANDOM_SECRET_TOKEN);
-        const userId = decodedToken.userId;
-        req.auth = {
-            userId: userId
-        };
-	    next();
-    } catch(error) {
-        res.status(401).json({ error });
+  try {
+    // Vérifie si l'utilisateur est connecté
+    if (req.session && req.session.userId) {
+      // On peut mettre l'info utilisateur dans req.auth pour rester cohérent
+      req.auth = {
+        userId: req.session.userId,
+        username: req.session.username, // si tu veux stocker le username
+      };
+      next();
+    } else {
+      res.status(401).json({ error: "Utilisateur non authentifié" });
     }
+  } catch (error) {
+    res.status(500).json({ error: "Erreur middleware auth" });
+  }
 };

@@ -25,6 +25,7 @@ connectDB();
 // --- Middlewares globaux ---
 app.use(corsConfig);
 app.options("*", corsConfig);
+app.set("trust proxy", 1);
 app.use(limiter);
 app.use(bodyParser.json({ limit: "15mb" }));
 app.use(bodyParser.urlencoded({ limit: "15mb", extended: true }));

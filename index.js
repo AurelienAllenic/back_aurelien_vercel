@@ -36,9 +36,10 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: process.env.MONGO_URI, // même URI que ta base principale
+      mongoUrl: process.env.MONGO_SECRET_KEY, // ⚡ ton URI réel
       collectionName: "sessions",
     }),
+
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // true si HTTPS

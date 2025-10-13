@@ -14,6 +14,7 @@ const epController = require("../controllers/EpController");
 const singleController = require("../controllers/singleController");
 const liveController = require("../controllers/LiveController");
 const trashController = require("../controllers/trashController");
+const freshNewsController = require("../controllers/freshNewsController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -113,5 +114,9 @@ router.delete("/lives/:id", auth, liveController.deleteLive);
 router.get("/trash", trashController.getAllTrashedItems);
 router.post("/restore-trash/:id", trashController.restoreItem);
 router.delete("/delete-trash/:id", trashController.permanentlyDeleteItem);
+
+// FRESH NEWS
+router.get("/fresh-news", freshNewsController.getFreshNews);
+router.post("/fresh-news", freshNewsController.upsertFreshNews);
 
 module.exports = router;

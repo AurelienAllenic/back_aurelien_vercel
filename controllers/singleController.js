@@ -13,11 +13,12 @@ exports.addSingle = async (req, res) => {
     youtubeEmbed,
     social,
     classImg,
-    imageStreamPage,
   } = req.body;
-  const file = req.file;
+  const files = req.files;
+  const imageFile = files?.image?.[0];
+  const streamFile = files?.imageStreamPage?.[0];
 
-  if (!index || !title || !author || !compositor || !alt || !file) {
+  if (!index || !title || !author || !compositor || !alt || !imageFile) {
     return res
       .status(400)
       .json({ message: "Tous les champs obligatoires doivent être remplis." });
@@ -44,10 +45,22 @@ exports.addSingle = async (req, res) => {
       );
     }
 
-    const uploadResult = await cloudinary.uploader.upload(file.path, {
+    const uploadResult = await cloudinary.uploader.upload(imageFile.path, {
       folder: "single_covers",
       resource_type: "image",
     });
+
+    let streamUrl = uploadResult.secure_url;
+    if (streamFile) {
+      const streamUploadResult = await cloudinary.uploader.upload(
+        streamFile.path,
+        {
+          folder: "stream_pages",
+          resource_type: "image",
+        }
+      );
+      streamUrl = streamUploadResult.secure_url;
+    }
 
     const newSingle = new Single({
       index: newIndex,
@@ -59,7 +72,7 @@ exports.addSingle = async (req, res) => {
       alt,
       youtubeEmbed: youtubeEmbed || "",
       social: social ? JSON.parse(social) : {},
-      imageStreamPage: imageStreamPage || uploadResult.secure_url,
+      imageStreamPage: streamUrl,
     });
 
     await newSingle.save();
@@ -127,7 +140,9 @@ exports.updateSingle = async (req, res) => {
     classImg,
     imageStreamPage,
   } = req.body;
-  const file = req.file;
+  const files = req.files;
+  const imageFile = files?.image?.[0];
+  const streamFile = files?.imageStreamPage?.[0];
 
   try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -143,6 +158,8 @@ exports.updateSingle = async (req, res) => {
       updateData.youtubeEmbed = youtubeEmbed || "";
     if (social) updateData.social = JSON.parse(social);
     if (classImg) updateData.classImg = classImg;
+    // Note: If you want to allow updating imageStreamPage via URL string, keep this; but since frontend sends file, it might not be used.
+    // If frontend only sends file for updates too, remove this and handle only via file.
     if (imageStreamPage) updateData.imageStreamPage = imageStreamPage;
 
     if (index) {
@@ -171,57 +188,86 @@ exports.updateSingle = async (req, res) => {
       updateData.index = newIndex;
     }
 
-    if (Object.keys(updateData).length === 0 && !file) {
-      return res
-        .status(400)
-        .json({ message: "Aucune donnée à mettre à jour." });
-    }
-
     const existingSingle = await Single.findById(id);
     if (!existingSingle) {
       return res.status(404).json({ message: "Single non trouvé." });
     }
 
-    if (file) {
-      if (existingSingle.image) {
-        const oldPublicId = existingSingle.image
-          .split("/")
-          .slice(-2)
-          .join("/")
-          .split(".")[0];
-        try {
-          await cloudinary.uploader.destroy(oldPublicId, {
-            resource_type: "image",
-          });
-        } catch (cloudinaryError) {
-          console.warn(
-            "⚠️ Erreur lors de la suppression de l'ancienne image :",
-            cloudinaryError
-          );
+    if (imageFile || streamFile || Object.keys(updateData).length > 0) {
+      if (imageFile) {
+        if (existingSingle.image) {
+          const oldPublicId = existingSingle.image
+            .split("/")
+            .slice(-2)
+            .join("/")
+            .split(".")[0];
+          try {
+            await cloudinary.uploader.destroy(oldPublicId, {
+              resource_type: "image",
+            });
+          } catch (cloudinaryError) {
+            console.warn(
+              "⚠️ Erreur lors de la suppression de l'ancienne image :",
+              cloudinaryError
+            );
+          }
         }
+
+        const uploadResult = await cloudinary.uploader.upload(imageFile.path, {
+          folder: "single_covers",
+          resource_type: "image",
+        });
+        updateData.image = uploadResult.secure_url;
       }
 
-      const uploadResult = await cloudinary.uploader.upload(file.path, {
-        folder: "single_covers",
-        resource_type: "image",
+      if (streamFile) {
+        if (existingSingle.imageStreamPage) {
+          const oldStreamPublicId = existingSingle.imageStreamPage
+            .split("/")
+            .slice(-2)
+            .join("/")
+            .split(".")[0];
+          try {
+            await cloudinary.uploader.destroy(oldStreamPublicId, {
+              resource_type: "image",
+            });
+          } catch (cloudinaryError) {
+            console.warn(
+              "⚠️ Erreur lors de la suppression de l'ancienne image stream :",
+              cloudinaryError
+            );
+          }
+        }
+
+        const streamUploadResult = await cloudinary.uploader.upload(
+          streamFile.path,
+          {
+            folder: "stream_pages",
+            resource_type: "image",
+          }
+        );
+        updateData.imageStreamPage = streamUploadResult.secure_url;
+      }
+
+      const updatedSingle = await Single.findOneAndUpdate(
+        { _id: id },
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedSingle) {
+        return res.status(404).json({ message: "Single non trouvé." });
+      }
+
+      res.status(200).json({
+        message: "Single mis à jour avec succès",
+        data: updatedSingle,
       });
-      updateData.image = uploadResult.secure_url;
+    } else {
+      return res
+        .status(400)
+        .json({ message: "Aucune donnée à mettre à jour." });
     }
-
-    const updatedSingle = await Single.findOneAndUpdate(
-      { _id: id },
-      { $set: updateData },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedSingle) {
-      return res.status(404).json({ message: "Single non trouvé." });
-    }
-
-    res.status(200).json({
-      message: "Single mis à jour avec succès",
-      data: updatedSingle,
-    });
   } catch (error) {
     console.error("❌ Erreur lors de la mise à jour du single :", error);
     res.status(400).json({

@@ -13,10 +13,10 @@ exports.addSingle = async (req, res) => {
     youtubeEmbed,
     social,
     classImg,
+    imageStreamPage,
   } = req.body;
   const file = req.file;
 
-  // Vérifier les champs obligatoires
   if (!index || !title || !author || !compositor || !alt || !file) {
     return res
       .status(400)
@@ -24,7 +24,6 @@ exports.addSingle = async (req, res) => {
   }
 
   try {
-    // Convertir index en nombre
     const newIndex = parseInt(index);
     if (isNaN(newIndex) || newIndex < 1) {
       return res
@@ -32,23 +31,19 @@ exports.addSingle = async (req, res) => {
         .json({ message: "L'index doit être un nombre positif." });
     }
 
-    // Vérifier si l'index existe déjà
     const existingSingle = await Single.findOne({ index: newIndex });
     if (existingSingle) {
-      // Trouver le prochain index disponible
       const maxIndexSingle = await Single.findOne()
         .sort({ index: -1 })
         .select("index");
       const nextIndex = maxIndexSingle ? maxIndexSingle.index + 1 : 1;
 
-      // Mettre à jour le single existant avec le prochain index
       await Single.updateOne(
         { _id: existingSingle._id },
         { $set: { index: nextIndex } }
       );
     }
 
-    // Upload de l'image à Cloudinary
     const uploadResult = await cloudinary.uploader.upload(file.path, {
       folder: "single_covers",
       resource_type: "image",
@@ -64,6 +59,7 @@ exports.addSingle = async (req, res) => {
       alt,
       youtubeEmbed: youtubeEmbed || "",
       social: social ? JSON.parse(social) : {},
+      imageStreamPage: imageStreamPage || uploadResult.secure_url,
     });
 
     await newSingle.save();
@@ -129,6 +125,7 @@ exports.updateSingle = async (req, res) => {
     youtubeEmbed,
     social,
     classImg,
+    imageStreamPage,
   } = req.body;
   const file = req.file;
 
@@ -146,8 +143,8 @@ exports.updateSingle = async (req, res) => {
       updateData.youtubeEmbed = youtubeEmbed || "";
     if (social) updateData.social = JSON.parse(social);
     if (classImg) updateData.classImg = classImg;
+    if (imageStreamPage) updateData.imageStreamPage = imageStreamPage;
 
-    // Gérer l'index si fourni
     if (index) {
       const newIndex = parseInt(index);
       if (isNaN(newIndex) || newIndex < 1) {
@@ -161,13 +158,11 @@ exports.updateSingle = async (req, res) => {
         existingSingleWithIndex &&
         existingSingleWithIndex._id.toString() !== id
       ) {
-        // Trouver le prochain index disponible
         const maxIndexSingle = await Single.findOne()
           .sort({ index: -1 })
           .select("index");
         const nextIndex = maxIndexSingle ? maxIndexSingle.index + 1 : 1;
 
-        // Mettre à jour le single existant avec le prochain index
         await Single.updateOne(
           { _id: existingSingleWithIndex._id },
           { $set: { index: nextIndex } }
@@ -188,7 +183,6 @@ exports.updateSingle = async (req, res) => {
     }
 
     if (file) {
-      // Supprimer l'ancienne image de Cloudinary
       if (existingSingle.image) {
         const oldPublicId = existingSingle.image
           .split("/")
@@ -207,7 +201,6 @@ exports.updateSingle = async (req, res) => {
         }
       }
 
-      // Upload de la nouvelle image à Cloudinary
       const uploadResult = await cloudinary.uploader.upload(file.path, {
         folder: "single_covers",
         resource_type: "image",
@@ -252,7 +245,6 @@ exports.deleteSingle = async (req, res) => {
       return res.status(404).json({ message: "Single non trouvé." });
     }
 
-    // Supprimer l'image de Cloudinary
     if (single.image) {
       const publicId = single.image
         .split("/")
@@ -269,7 +261,6 @@ exports.deleteSingle = async (req, res) => {
       }
     }
 
-    // Supprimer le single de la base de données
     const result = await Single.deleteOne({ _id: id });
 
     if (result.deletedCount === 0) {

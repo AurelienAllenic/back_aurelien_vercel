@@ -13,6 +13,7 @@ const videoController = require("../controllers/VideosController");
 const epController = require("../controllers/EpController");
 const singleController = require("../controllers/singleController");
 const liveController = require("../controllers/LiveController");
+const { uploadSingleImages } = require("../middleware/multerMiddleware");
 const trashController = require("../controllers/trashController");
 const freshNewsController = require("../controllers/freshNewsController");
 
@@ -97,10 +98,20 @@ router.put("/eps/:id", auth, uploadImage, epController.updateEp);
 router.delete("/eps/:id", auth, epController.deleteEp);
 
 // SINGLE ROUTES
-router.post("/add-single", auth, uploadImage, singleController.addSingle);
+router.post(
+  "/add-single",
+  auth,
+  uploadSingleImages,
+  singleController.addSingle
+);
 router.get("/singles", singleController.findAllSingles);
 router.get("/singles/:id", singleController.findOneSingle);
-router.put("/singles/:id", auth, uploadImage, singleController.updateSingle);
+router.put(
+  "/singles/:id",
+  auth,
+  uploadSingleImages,
+  singleController.updateSingle
+);
 router.delete("/singles/:id", auth, singleController.deleteSingle);
 
 // LIVE ROUTES

@@ -15,9 +15,9 @@ const singleSchema = new mongoose.Schema(
       type: String,
       default: "img-single",
     },
-    imageStreamPage:{
+    imageStreamPage: {
       type: String,
-      required: true,
+      required: false,
     },
     title: {
       type: String,

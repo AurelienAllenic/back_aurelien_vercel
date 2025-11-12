@@ -14,9 +14,10 @@ exports.addSingle = async (req, res) => {
     social,
     classImg,
   } = req.body;
-  const files = req.files;
-  const imageFile = files?.image?.[0];
-  const streamFile = files?.imageStreamPage?.[0];
+
+  // Les fichiers uploadés via CloudinaryStorage
+  const imageFile = req.files?.image?.[0];
+  const streamFile = req.files?.imageStreamPage?.[0];
 
   if (!index || !title || !author || !compositor || !alt || !imageFile) {
     return res.status(400).json({
@@ -46,28 +47,14 @@ exports.addSingle = async (req, res) => {
       );
     }
 
-    // Upload de l'image principale
-    const uploadResult = await cloudinary.uploader.upload(imageFile.path, {
-      folder: "single_covers",
-      resource_type: "image",
-    });
-
-    // Upload de l'image stream (optionnelle)
-    let streamUrl = null;
-    if (streamFile) {
-      const streamUploadResult = await cloudinary.uploader.upload(
-        streamFile.path,
-        {
-          folder: "stream_pages",
-          resource_type: "image",
-        }
-      );
-      streamUrl = streamUploadResult.secure_url;
-    }
+    // ✅ Avec CloudinaryStorage, les fichiers sont déjà uploadés
+    // L'URL Cloudinary est dans file.path
+    const imageUrl = imageFile.path;
+    const streamUrl = streamFile ? streamFile.path : null;
 
     const newSingle = new Single({
       index: newIndex,
-      image: uploadResult.secure_url,
+      image: imageUrl,
       classImg: classImg || "img-single",
       imageStreamPage: streamUrl,
       title,
@@ -91,7 +78,6 @@ exports.addSingle = async (req, res) => {
     });
   }
 };
-
 // Récupérer tous les singles
 exports.findAllSingles = async (req, res) => {
   try {
@@ -142,9 +128,10 @@ exports.updateSingle = async (req, res) => {
     social,
     classImg,
   } = req.body;
-  const files = req.files;
-  const imageFile = files?.image?.[0];
-  const streamFile = files?.imageStreamPage?.[0];
+
+  // Les fichiers uploadés via CloudinaryStorage
+  const imageFile = req.files?.image?.[0];
+  const streamFile = req.files?.imageStreamPage?.[0];
 
   try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -196,6 +183,7 @@ exports.updateSingle = async (req, res) => {
 
     // Upload nouvelle image principale
     if (imageFile) {
+      // Supprimer l'ancienne image de Cloudinary
       if (existingSingle.image) {
         const oldPublicId = existingSingle.image
           .split("/")
@@ -213,16 +201,13 @@ exports.updateSingle = async (req, res) => {
           );
         }
       }
-
-      const uploadResult = await cloudinary.uploader.upload(imageFile.path, {
-        folder: "single_covers",
-        resource_type: "image",
-      });
-      updateData.image = uploadResult.secure_url;
+      // ✅ Avec CloudinaryStorage, le fichier est déjà uploadé
+      updateData.image = imageFile.path;
     }
 
     // Upload nouvelle image stream
     if (streamFile) {
+      // Supprimer l'ancienne image stream de Cloudinary
       if (existingSingle.imageStreamPage) {
         const oldStreamPublicId = existingSingle.imageStreamPage
           .split("/")
@@ -240,15 +225,8 @@ exports.updateSingle = async (req, res) => {
           );
         }
       }
-
-      const streamUploadResult = await cloudinary.uploader.upload(
-        streamFile.path,
-        {
-          folder: "stream_pages",
-          resource_type: "image",
-        }
-      );
-      updateData.imageStreamPage = streamUploadResult.secure_url;
+      // ✅ Avec CloudinaryStorage, le fichier est déjà uploadé
+      updateData.imageStreamPage = streamFile.path;
     }
 
     // Vérifier qu'il y a des données à mettre à jour

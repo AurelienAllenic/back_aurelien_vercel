@@ -40,8 +40,23 @@ const upload = multer({
   },
 });
 
+// Middleware existant - NE PAS TOUCHER
 exports.uploadImage = (req, res, next) => {
   upload.single("image")(req, res, (err) => {
+    if (err) {
+      console.error("Erreur lors de l'upload :", err);
+      return res.status(400).json({ message: err.message });
+    }
+    next();
+  });
+};
+
+// ✅ NOUVEAU : Ajouter uniquement cette fonction pour les singles
+exports.uploadSingleImages = (req, res, next) => {
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "imageStreamPage", maxCount: 1 },
+  ])(req, res, (err) => {
     if (err) {
       console.error("Erreur lors de l'upload :", err);
       return res.status(400).json({ message: err.message });

@@ -13,7 +13,7 @@ const videoController = require("../controllers/VideosController");
 const epController = require("../controllers/EpController");
 const singleController = require("../controllers/singleController");
 const liveController = require("../controllers/LiveController");
-const { uploadSingleImages } = require("../middleware/multerMiddleware");
+const { uploadSingleImages } = require("../middlewares/multerMiddleware");
 const trashController = require("../controllers/trashController");
 const freshNewsController = require("../controllers/freshNewsController");
 

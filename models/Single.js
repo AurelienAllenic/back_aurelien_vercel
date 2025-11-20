@@ -49,6 +49,7 @@ const singleSchema = new mongoose.Schema(
       tidal: { type: String },
       itunes: { type: String },
       soundCloud: { type: String },
+      qobuz: { type: String },
     },
   },
   {

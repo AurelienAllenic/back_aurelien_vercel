@@ -11,6 +11,7 @@ const SocialLinksSchema = new mongoose.Schema(
     appleMusic: { type: String, default: "" },
     amazonMusic: { type: String, default: "" },
     soundcloud: { type: String, default: "" },
+    qobuz: { type: String, default: "" },
   },
   { timestamps: true }
 );

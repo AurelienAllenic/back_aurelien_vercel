@@ -1,6 +1,5 @@
 const SocialLinks = require("../models/SocialLinks");
 
-// ✅ Récupérer les liens sociaux (ne nécessite pas d'authentification)
 exports.getSocialLinks = async (req, res) => {
   try {
     const socialLinks = await SocialLinks.findOne();
@@ -15,7 +14,8 @@ exports.getSocialLinks = async (req, res) => {
         appleMusic: "",
         amazonMusic: "",
         soundcloud: "",
-      }); // Renvoie un objet vide si aucun trouvé
+        qobuz: "",
+      });
     }
     res.status(200).json(socialLinks);
   } catch (error) {
@@ -23,16 +23,13 @@ exports.getSocialLinks = async (req, res) => {
   }
 };
 
-// ✅ Mettre à jour les liens sociaux
 exports.updateSocialLinks = async (req, res) => {
   try {
     let socialLinks = await SocialLinks.findOne();
 
     if (!socialLinks) {
-      // Crée un nouvel objet si aucun lien n'existe
       socialLinks = new SocialLinks(req.body);
     } else {
-      // Met à jour les liens existants
       Object.assign(socialLinks, req.body);
     }
 

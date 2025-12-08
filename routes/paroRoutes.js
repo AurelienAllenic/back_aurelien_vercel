@@ -147,4 +147,11 @@ router.put("/linktree-blocks/:id", auth, linktreeBlockController.updateBlock);
 router.delete("/linktree-blocks/:id", auth, linktreeBlockController.deleteBlock);
 router.patch("/linktree-blocks/reorder", auth, linktreeBlockController.reorderBlocks);
 
+// ========== LINKTREE PROFILE ==========
+// Route publique
+router.get("/linktree-profile", linktreeProfileController.getProfile);
+
+// Route admin
+router.put("/linktree-profile", auth, linktreeProfileController.updateProfile);
+
 module.exports = router;

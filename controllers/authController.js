@@ -79,7 +79,6 @@ exports.logout = (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
     });
 
     res.status(200).json({ message: "Déconnexion réussie." });

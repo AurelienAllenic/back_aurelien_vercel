@@ -74,10 +74,12 @@ exports.logout = (req, res) => {
     }
 
     // Supprimer le cookie de session
-    res.clearCookie("connect.sid", {
+    res.clearCookie("paro.sid", { // ⚡ Utilisez le même nom
+      path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
     });
 
     res.status(200).json({ message: "Déconnexion réussie." });

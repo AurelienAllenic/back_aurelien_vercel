@@ -33,6 +33,7 @@ app.use(bodyParser.urlencoded({ limit: "15mb", extended: true }));
 // --- CONFIGURATION DES SESSIONS ---
 app.use(
   session({
+    name: "paro.sid", // ⚡ Nom explicite du cookie
     secret: process.env.SESSION_SECRET || "secret_key",
     resave: false,
     saveUninitialized: false,
@@ -40,12 +41,13 @@ app.use(
       mongoUrl: process.env.MONGO_SECRET_KEY,
       collectionName: "sessions",
     }),
-
+    proxy: true, // ⚡ IMPORTANT pour Vercel
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // true si HTTPS
+      secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 24, // 1 jour
+      domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
     },
   })
 );

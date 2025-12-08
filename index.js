@@ -44,11 +44,11 @@ app.use(
     proxy: true, // ⚡ IMPORTANT pour Vercel
     cookie: {
       httpOnly: true,
-      secure: true, // Toujours true en production
-      sameSite: "none", // Obligatoire pour cross-domain
+      secure: true,
+      sameSite: "none",
       maxAge: 1000 * 60 * 60 * 24,
-      domain: undefined, // Laisse le navigateur gérer
       path: "/",
+      partitioned: true, // ⚡ AJOUTER CETTE LIGNE - Support CHIPS
     },
   })
 );

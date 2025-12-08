@@ -13,7 +13,7 @@ const linktreeBlockSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["video", "ep", "live", "link", "embed", "image"],
+      enum: ["video", "ep", "live", "link", "embed", "image", "single"],
       required: true,
     },
     // Contenu flexible selon le type

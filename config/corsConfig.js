@@ -21,7 +21,7 @@ const corsOptions = {
 
     if (allowedOrigins.includes(origin)) {
       // ⚡ Renvoie **l'origine exacte** dans le header
-      callback(null, origin);
+      callback(null, true);
     } else {
       callback(new Error("CORS policy: Origin not allowed"));
     }
@@ -32,4 +32,4 @@ const corsOptions = {
   optionsSuccessStatus: 200,
 };
 
-module.exports = [cors(corsOptions)];
+module.exports = cors(corsOptions);

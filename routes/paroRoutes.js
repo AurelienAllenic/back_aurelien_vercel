@@ -17,6 +17,7 @@ const { uploadSingleImages } = require("../middlewares/multerMiddleware");
 const trashController = require("../controllers/trashController");
 const freshNewsController = require("../controllers/freshNewsController");
 const paroContactController = require("../controllers/paroContactController");
+const linktreeBlockController = require("../controllers/linktreeBlockController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -133,5 +134,16 @@ router.post("/fresh-news", freshNewsController.upsertFreshNews);
 
 // PARO CONTACT ROUTE
 router.post("/paro-contact", paroContactController.handleParoContact);
+
+// ========== LINKTREE BLOCKS ==========
+// Routes publiques (pas d'auth)
+router.get("/linktree-blocks", linktreeBlockController.getAllActiveBlocks);
+
+// Routes admin (avec auth)
+router.get("/linktree-blocks/all", auth, linktreeBlockController.getAllBlocks);
+router.post("/linktree-blocks", auth, linktreeBlockController.createBlock);
+router.put("/linktree-blocks/:id", auth, linktreeBlockController.updateBlock);
+router.delete("/linktree-blocks/:id", auth, linktreeBlockController.deleteBlock);
+router.patch("/linktree-blocks/reorder", auth, linktreeBlockController.reorderBlocks);
 
 module.exports = router;

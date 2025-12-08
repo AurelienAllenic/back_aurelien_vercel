@@ -37,7 +37,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: process.env.MONGO_SECRET_KEY, // ⚡ ton URI réel
+      mongoUrl: process.env.MONGO_SECRET_KEY,
       collectionName: "sessions",
     }),
 

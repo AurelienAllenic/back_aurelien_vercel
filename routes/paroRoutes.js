@@ -18,6 +18,7 @@ const trashController = require("../controllers/trashController");
 const freshNewsController = require("../controllers/freshNewsController");
 const paroContactController = require("../controllers/paroContactController");
 const linktreeBlockController = require("../controllers/linktreeBlockController");
+const linktreeProfileController = require("../controllers/linktreeProfileController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);

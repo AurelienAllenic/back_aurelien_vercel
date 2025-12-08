@@ -44,9 +44,11 @@ app.use(
     proxy: true, // ⚡ IMPORTANT pour Vercel
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 1000 * 60 * 60 * 24, // 1 jour
+      secure: true, // Toujours true en production
+      sameSite: "none", // Obligatoire pour cross-domain
+      maxAge: 1000 * 60 * 60 * 24,
+      domain: undefined, // Laisse le navigateur gérer
+      path: "/",
     },
   })
 );

@@ -2,17 +2,51 @@ const LinktreeBlock = require("../models/LinktreeBlock");
 
 // Récupérer tous les blocs actifs (pour le frontend public)
 exports.getAllActiveBlocks = async (req, res) => {
-  try {
-    const blocks = await LinktreeBlock.find({ isActive: true })
-      .sort({ order: 1 })
-      .lean();
-    
-    res.status(200).json(blocks);
-  } catch (error) {
-    console.error("Erreur récupération blocs linktree:", error);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-};
+    try {
+      const blocks = await LinktreeBlock.find({ isActive: true })
+        .sort({ order: 1 })
+        .lean();
+      
+      // Populate les références (EP, Single, Live, Video)
+      const Ep = require('../models/Ep');
+      const Single = require('../models/Single');
+      const Live = require('../models/Live');
+      const Video = require('../models/Videos');
+      
+      const populatedBlocks = await Promise.all(
+        blocks.map(async (block) => {
+          if (block.content?.refId && block.content?.refType) {
+            let refData = null;
+            
+            switch (block.content.refType) {
+              case 'Ep':
+                refData = await Ep.findById(block.content.refId).lean();
+                break;
+              case 'Single':
+                refData = await Single.findById(block.content.refId).lean();
+                break;
+              case 'Live':
+                refData = await Live.findById(block.content.refId).lean();
+                break;
+              case 'Video':
+                refData = await Video.findById(block.content.refId).lean();
+                break;
+            }
+            
+            if (refData) {
+              block.content.populatedData = refData;
+            }
+          }
+          return block;
+        })
+      );
+      
+      res.status(200).json(populatedBlocks);
+    } catch (error) {
+      console.error("Erreur récupération blocs linktree:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  };
 
 // Récupérer tous les blocs (pour l'admin)
 exports.getAllBlocks = async (req, res) => {

@@ -16,6 +16,7 @@ const liveController = require("../controllers/LiveController");
 const { uploadSingleImages } = require("../middlewares/multerMiddleware");
 const trashController = require("../controllers/trashController");
 const freshNewsController = require("../controllers/freshNewsController");
+const paroContactController = require("../controllers/paroContactController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -129,5 +130,8 @@ router.delete("/delete-trash/:id", trashController.permanentlyDeleteItem);
 // FRESH NEWS
 router.get("/fresh-news", freshNewsController.getFreshNews);
 router.post("/fresh-news", freshNewsController.upsertFreshNews);
+
+// PARO CONTACT ROUTE
+router.post("/paro-contact", paroContactController.handleParoContact);
 
 module.exports = router;

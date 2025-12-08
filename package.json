@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
     "bcryptjs": "^3.0.0",
     "cloudinary": "^1.41.3",
     "connect-mongo": "^5.1.0",
@@ -32,7 +33,7 @@
     "uuid": "^11.0.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11",
-    "cross-env": "^7.0.3"
+    "cross-env": "^7.0.3",
+    "nodemon": "^3.1.11"
   }
 }

@@ -6,6 +6,7 @@ exports.getSocialLinks = async (req, res) => {
     if (!socialLinks) {
       return res.status(200).json({
         youtube: "",
+        youtubeMusic: "",
         instagram: "",
         facebook: "",
         tiktok: "",

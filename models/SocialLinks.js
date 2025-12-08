@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const SocialLinksSchema = new mongoose.Schema(
   {
     youtube: { type: String, default: "" },
+    youtubeMusic: { type: String, default: "" },
     instagram: { type: String, default: "" },
     facebook: { type: String, default: "" },
     tiktok: { type: String, default: "" },

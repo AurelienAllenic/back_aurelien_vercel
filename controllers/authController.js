@@ -40,14 +40,23 @@ exports.login = async (req, res) => {
         .json({ error: "Paire username/password incorrecte." });
     }
 
-    // ✅ Création d’une session
+    // ✅ Création d'une session
     req.session.userId = user._id;
     req.session.username = user.username;
 
-    res.status(200).json({
-      message: "Connexion réussie.",
-      user: { id: user._id, username: user.username },
+    // ✅✅ AJOUTER CETTE LIGNE - Sauvegarder explicitement la session
+    req.session.save((err) => {
+      if (err) {
+        console.error("Erreur lors de la sauvegarde de la session :", err);
+        return res.status(500).json({ message: "Erreur de session." });
+      }
+
+      res.status(200).json({
+        message: "Connexion réussie.",
+        user: { id: user._id, username: user.username },
+      });
     });
+
   } catch (error) {
     console.error("Erreur lors de la connexion :", error);
     res.status(500).json({ message: "Erreur serveur lors de la connexion." });

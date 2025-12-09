@@ -11,13 +11,13 @@ apiInstance.setApiKey(
  * Gère l'envoi d'emails depuis le formulaire de contact PARO
  */
 exports.handleParoContact = async (req, res) => {
-  const { name, email, tel, age, sexe, message } = req.body;
+  const { email, message } = req.body;
 
   // Validation
-  if (!name || !email || !message) {
+  if (!email || !message) {
     return res.status(400).json({ 
       success: false, 
-      error: 'Nom, email et message sont requis' 
+      error: 'Email et message sont requis' 
     });
   }
 
@@ -34,17 +34,16 @@ exports.handleParoContact = async (req, res) => {
     // 1️⃣ Email pour vous (admin PARO)
     const adminEmail = {
       sender: { 
-        email: 'Paro.musique.mgmt@gmail.com', 
+        email: 'paro.musique.mgmt@gmail.com', 
         name: 'PARO Contact Form' 
       },
       to: [{ 
         email: process.env.PARO_ADMIN_EMAIL || 'contact@paro-musique.com'
       }],
       replyTo: { 
-        email: email, 
-        name: name 
+        email: email
       },
-      subject: `[PARO] Nouveau contact de ${name}`,
+      subject: `[PARO] Nouveau message de contact`,
       htmlContent: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 650px; margin: 0 auto; background: #f8f9fa;">
           
@@ -66,46 +65,14 @@ exports.handleParoContact = async (req, res) => {
             </h2>
             
             <table style="width: 100%; border-collapse: collapse; margin: 25px 0;">
-              <tr style="background: #f7fafc;">
-                <td style="padding: 15px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #4a5568; width: 35%;">
-                  👤 Nom
-                </td>
-                <td style="padding: 15px; border-bottom: 1px solid #e2e8f0; color: #2d3748;">
-                  ${name}
-                </td>
-              </tr>
               <tr>
-                <td style="padding: 15px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #4a5568;">
+                <td style="padding: 15px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #4a5568; width: 25%;">
                   📧 Email
                 </td>
                 <td style="padding: 15px; border-bottom: 1px solid #e2e8f0;">
                   <a href="mailto:${email}" style="color: #667eea; text-decoration: none; font-weight: 500;">
                     ${email}
                   </a>
-                </td>
-              </tr>
-              <tr style="background: #f7fafc;">
-                <td style="padding: 15px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #4a5568;">
-                  📱 Téléphone
-                </td>
-                <td style="padding: 15px; border-bottom: 1px solid #e2e8f0; color: #2d3748;">
-                  ${tel || '<em style="color: #a0aec0;">Non renseigné</em>'}
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 15px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #4a5568;">
-                  🎂 Âge
-                </td>
-                <td style="padding: 15px; border-bottom: 1px solid #e2e8f0; color: #2d3748;">
-                  ${age || '<em style="color: #a0aec0;">Non renseigné</em>'}
-                </td>
-              </tr>
-              <tr style="background: #f7fafc;">
-                <td style="padding: 15px; font-weight: 600; color: #4a5568;">
-                  ⚧ Sexe
-                </td>
-                <td style="padding: 15px; color: #2d3748;">
-                  ${sexe || '<em style="color: #a0aec0;">Non renseigné</em>'}
                 </td>
               </tr>
             </table>
@@ -131,7 +98,7 @@ exports.handleParoContact = async (req, res) => {
                         font-weight: 600;
                         font-size: 16px;
                         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
-                ✉️ Répondre à ${name}
+                ✉️ Répondre
               </a>
             </div>
             
@@ -156,17 +123,16 @@ exports.handleParoContact = async (req, res) => {
     };
 
     await apiInstance.sendTransacEmail(adminEmail);
-    console.log(`✅ Email admin PARO envoyé pour ${name}`);
+    console.log(`✅ Email admin PARO envoyé depuis ${email}`);
 
     // 2️⃣ Email de confirmation pour le visiteur
     const confirmationEmail = {
       sender: { 
-        email: 'Paro.musique.mgmt@gmail.com', 
+        email: 'paro.musique.mgmt@gmail.com', 
         name: 'PARO' 
       },
       to: [{ 
-        email: email, 
-        name: name 
+        email: email
       }],
       subject: 'Message bien reçu ! 🎵',
       htmlContent: `
@@ -186,7 +152,7 @@ exports.handleParoContact = async (req, res) => {
           <div style="background: white; padding: 35px 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
             
             <h2 style="color: #2d3748; font-size: 24px; margin-top: 0;">
-              Bonjour ${name} ! 👋
+              Bonjour ! 👋
             </h2>
             
             <p style="color: #4a5568; line-height: 1.8; font-size: 16px; margin: 20px 0;">

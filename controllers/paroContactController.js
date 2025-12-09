@@ -34,7 +34,7 @@ exports.handleParoContact = async (req, res) => {
     // 1️⃣ Email pour vous (admin PARO)
     const adminEmail = {
       sender: { 
-        email: 'paro.musique.mgmt@gmail.com', 
+        email: 'Paro.musique.mgmt@gmail.com', 
         name: 'PARO Contact Form' 
       },
       to: [{ 
@@ -128,7 +128,7 @@ exports.handleParoContact = async (req, res) => {
     // 2️⃣ Email de confirmation pour le visiteur
     const confirmationEmail = {
       sender: { 
-        email: 'paro.musique.mgmt@gmail.com', 
+        email: 'Paro.musique.mgmt@gmail.com', 
         name: 'PARO' 
       },
       to: [{ 

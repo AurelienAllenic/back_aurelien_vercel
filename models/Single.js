@@ -38,6 +38,7 @@ const singleSchema = new mongoose.Schema(
     youtubeEmbed: {
       type: String,
       required: false,
+      default: "",
     },
     social: {
       spotify: { type: String },

@@ -61,7 +61,7 @@ exports.addSingle = async (req, res) => {
       author,
       compositor,
       alt,
-      youtubeEmbed: youtubeEmbed || undefined,
+      youtubeEmbed: youtubeEmbed ?? "",
       social: social ? JSON.parse(social) : {},
     });
 
@@ -151,7 +151,7 @@ exports.updateSingle = async (req, res) => {
     if (compositor !== undefined) updateData.compositor = compositor;
     if (alt !== undefined) updateData.alt = alt;
     if (youtubeEmbed !== undefined)
-      updateData.youtubeEmbed = youtubeEmbed || undefined;
+      updateData.youtubeEmbed = youtubeEmbed ?? "";
     if (social !== undefined) updateData.social = JSON.parse(social);
     if (classImg !== undefined) updateData.classImg = classImg;
 

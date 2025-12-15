@@ -12,7 +12,7 @@ cloudinary.config({
 
 // Ajouter une vidéo
 exports.addVideo = async (req, res) => {
-  const { link, alt, title, modifiedTitleVideo } = req.body;
+  const { link, alt, title, modifiedTitleVideo, isActive } = req.body;
   const file = req.file;
 
   if (!link || !alt || !file || !title || !modifiedTitleVideo) {
@@ -34,6 +34,7 @@ exports.addVideo = async (req, res) => {
       image: uploadResult.secure_url,
       title,
       modifiedTitleVideo,
+      isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
     });
 
     await newVideo.save();
@@ -87,7 +88,7 @@ exports.findOneVideo = async (req, res) => {
 // Mettre à jour une vidéo
 exports.updateVideo = async (req, res) => {
   const { id } = req.params;
-  const { link, alt, title, modifiedTitleVideo } = req.body;
+  const { link, alt, title, modifiedTitleVideo, isActive } = req.body;
   const file = req.file;
 
   try {
@@ -100,6 +101,9 @@ exports.updateVideo = async (req, res) => {
     if (alt) updateData.alt = alt;
     if (title) updateData.title = title;
     if (modifiedTitleVideo) updateData.modifiedTitleVideo = modifiedTitleVideo;
+    if (isActive !== undefined) {
+      updateData.isActive = isActive === "true" || isActive === true;
+    }
 
     if (Object.keys(updateData).length === 0 && !file) {
       return res

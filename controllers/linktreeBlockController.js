@@ -1,4 +1,5 @@
 const LinktreeBlock = require("../models/LinktreeBlock");
+const mongoose = require("mongoose");
 
 // Récupérer tous les blocs actifs (pour le frontend public)
 exports.getAllActiveBlocks = async (req, res) => {

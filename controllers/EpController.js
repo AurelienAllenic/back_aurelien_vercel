@@ -16,6 +16,7 @@ exports.addEp = async (req, res) => {
     description,
     link,
     ending,
+    isActive,
   } = req.body;
   const file = req.file;
 
@@ -77,6 +78,7 @@ exports.addEp = async (req, res) => {
       description,
       link,
       ending: ending || "", // Gérer ending comme optionnel, chaîne vide par défaut
+      isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
       social: social ? JSON.parse(social) : {},
     });
 
@@ -145,6 +147,7 @@ exports.updateEp = async (req, res) => {
     description,
     link,
     ending,
+    isActive,
   } = req.body;
   const file = req.file;
 
@@ -164,6 +167,9 @@ exports.updateEp = async (req, res) => {
     if (description) updateData.description = description;
     if (link) updateData.link = link;
     if (ending !== undefined) updateData.ending = ending || ""; // Gérer ending explicitement
+    if (isActive !== undefined) {
+      updateData.isActive = isActive === "true" || isActive === true;
+    }
 
     // Gérer l'index si fourni
     if (index) {

@@ -11,8 +11,8 @@ cloudinary.config({
 
 // Ajouter une radio
 exports.addRadio = async (req, res) => {
-  const { title, date, guestsList, firstVideo, secondVideo, thirdVideo } =
-    req.body;
+  const { title, date, guestsList, firstVideo, secondVideo, thirdVideo, isActive } =
+  req.body;
 
   // Vérifier si tous les champs sont remplis
   if (!title || !date || !guestsList) {
@@ -51,6 +51,7 @@ exports.addRadio = async (req, res) => {
       secondVideo: secondVideo || null,
       thirdVideo: thirdVideo || null,
       image,
+      isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
     });
 
     await newRadio.save();
@@ -112,6 +113,10 @@ exports.updateRadio = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Aucune donnée à mettre à jour." });
+    }
+
+    if (updateData.isActive !== undefined) {
+      updateData.isActive = updateData.isActive === "true" || updateData.isActive === true;
     }
 
     const radio = await Radio.findById(id);

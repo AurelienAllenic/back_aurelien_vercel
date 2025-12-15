@@ -67,22 +67,20 @@ exports.createBlock = async (req, res) => {
   try {
     const { order } = req.body;
     
-    // Gestion du conflit d'ordre (comme pour les singles avec index)
+    // Si un ordre est spécifié, décaler les blocs existants
     if (order !== undefined) {
       const newOrder = parseInt(order);
       if (!isNaN(newOrder) && newOrder >= 0) {
-        const existingBlock = await LinktreeBlock.findOne({ order: newOrder });
-        if (existingBlock) {
-          // Trouver le prochain ordre disponible
-          const maxOrderBlock = await LinktreeBlock.findOne()
-            .sort({ order: -1 })
-            .select("order");
-          const nextOrder = maxOrderBlock ? maxOrderBlock.order + 1 : 0;
-          
-          // Décaler le bloc existant
+        // Trouver tous les blocs avec un ordre >= newOrder
+        const blocksToShift = await LinktreeBlock.find({
+          order: { $gte: newOrder }
+        }).sort({ order: 1 });
+        
+        // Décaler chaque bloc de +1
+        for (const block of blocksToShift) {
           await LinktreeBlock.updateOne(
-            { _id: existingBlock._id },
-            { $set: { order: nextOrder } }
+            { _id: block._id },
+            { $set: { order: block.order + 1 } }
           );
         }
       }
@@ -104,6 +102,7 @@ exports.createBlock = async (req, res) => {
 
 
 // Mettre à jour un bloc
+// Mettre à jour un bloc
 exports.updateBlock = async (req, res) => {
   try {
     const { id } = req.params;
@@ -120,25 +119,29 @@ exports.updateBlock = async (req, res) => {
     
     const updateData = { ...req.body };
     
-    // Gestion du conflit d'ordre lors de la mise à jour
+    // Gestion du décalage d'ordre lors de la mise à jour
     if (order !== undefined) {
       const newOrder = parseInt(order);
-      if (!isNaN(newOrder) && newOrder >= 0) {
-        const existingBlockWithOrder = await LinktreeBlock.findOne({ order: newOrder });
-        if (
-          existingBlockWithOrder &&
-          existingBlockWithOrder._id.toString() !== id
-        ) {
-          // Trouver le prochain ordre disponible
-          const maxOrderBlock = await LinktreeBlock.findOne()
-            .sort({ order: -1 })
-            .select("order");
-          const nextOrder = maxOrderBlock ? maxOrderBlock.order + 1 : 0;
-          
-          // Décaler le bloc existant
-          await LinktreeBlock.updateOne(
-            { _id: existingBlockWithOrder._id },
-            { $set: { order: nextOrder } }
+      const oldOrder = existingBlock.order;
+      
+      if (!isNaN(newOrder) && newOrder >= 0 && newOrder !== oldOrder) {
+        if (newOrder > oldOrder) {
+          // Décaler vers le bas : décrémenter les blocs entre oldOrder+1 et newOrder
+          await LinktreeBlock.updateMany(
+            { 
+              _id: { $ne: id },
+              order: { $gt: oldOrder, $lte: newOrder }
+            },
+            { $inc: { order: -1 } }
+          );
+        } else {
+          // Décaler vers le haut : incrémenter les blocs entre newOrder et oldOrder-1
+          await LinktreeBlock.updateMany(
+            { 
+              _id: { $ne: id },
+              order: { $gte: newOrder, $lt: oldOrder }
+            },
+            { $inc: { order: 1 } }
           );
         }
         updateData.order = newOrder;

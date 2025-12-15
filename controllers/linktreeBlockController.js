@@ -65,6 +65,29 @@ exports.getAllBlocks = async (req, res) => {
 // Créer un nouveau bloc
 exports.createBlock = async (req, res) => {
   try {
+    const { order } = req.body;
+    
+    // Gestion du conflit d'ordre (comme pour les singles avec index)
+    if (order !== undefined) {
+      const newOrder = parseInt(order);
+      if (!isNaN(newOrder) && newOrder >= 0) {
+        const existingBlock = await LinktreeBlock.findOne({ order: newOrder });
+        if (existingBlock) {
+          // Trouver le prochain ordre disponible
+          const maxOrderBlock = await LinktreeBlock.findOne()
+            .sort({ order: -1 })
+            .select("order");
+          const nextOrder = maxOrderBlock ? maxOrderBlock.order + 1 : 0;
+          
+          // Décaler le bloc existant
+          await LinktreeBlock.updateOne(
+            { _id: existingBlock._id },
+            { $set: { order: nextOrder } }
+          );
+        }
+      }
+    }
+    
     const newBlock = new LinktreeBlock(req.body);
     await newBlock.save();
     
@@ -79,13 +102,52 @@ exports.createBlock = async (req, res) => {
   }
 };
 
+
 // Mettre à jour un bloc
 exports.updateBlock = async (req, res) => {
   try {
     const { id } = req.params;
+    const { order } = req.body;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "ID invalide" });
+    }
+    
+    const existingBlock = await LinktreeBlock.findById(id);
+    if (!existingBlock) {
+      return res.status(404).json({ error: "Bloc non trouvé" });
+    }
+    
+    const updateData = { ...req.body };
+    
+    // Gestion du conflit d'ordre lors de la mise à jour
+    if (order !== undefined) {
+      const newOrder = parseInt(order);
+      if (!isNaN(newOrder) && newOrder >= 0) {
+        const existingBlockWithOrder = await LinktreeBlock.findOne({ order: newOrder });
+        if (
+          existingBlockWithOrder &&
+          existingBlockWithOrder._id.toString() !== id
+        ) {
+          // Trouver le prochain ordre disponible
+          const maxOrderBlock = await LinktreeBlock.findOne()
+            .sort({ order: -1 })
+            .select("order");
+          const nextOrder = maxOrderBlock ? maxOrderBlock.order + 1 : 0;
+          
+          // Décaler le bloc existant
+          await LinktreeBlock.updateOne(
+            { _id: existingBlockWithOrder._id },
+            { $set: { order: nextOrder } }
+          );
+        }
+        updateData.order = newOrder;
+      }
+    }
+    
     const updatedBlock = await LinktreeBlock.findByIdAndUpdate(
       id,
-      req.body,
+      { $set: updateData },
       { new: true, runValidators: true }
     );
     

@@ -12,7 +12,7 @@ cloudinary.config({
 // **Créer un article de presse avec un ordre**
 exports.createPress = async (req, res) => {
   try {
-    const { link, alt } = req.body;
+    const { link, alt, isActive } = req.body;
     if (!req.file || !req.file.path) {
       return res.status(400).json({ error: "Aucune image fournie" });
     }
@@ -26,6 +26,7 @@ exports.createPress = async (req, res) => {
       link: link && link.trim() !== "" ? link : null,
       alt,
       order: newOrder,
+      isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
     });
     await press.save();
     res.status(201).json(press);
@@ -58,9 +59,12 @@ exports.findAllPress = async (req, res) => {
 // **Mettre à jour un article de presse**
 exports.updatePress = async (req, res) => {
   try {
-    const { link, alt } = req.body;
+    const { link, alt, isActive } = req.body;
     let updateData = { alt };
     updateData.link = link && link.trim() !== "" ? link : null;
+    if (isActive !== undefined) {
+      updateData.isActive = isActive === "true" || isActive === true;
+    }
     if (req.file && req.file.path) {
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "press",

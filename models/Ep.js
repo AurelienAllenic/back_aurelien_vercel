@@ -7,6 +7,7 @@ const epSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    isActive: {type: Boolean,default: true,},
     image: {
       type: String,
       required: true,

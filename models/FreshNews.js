@@ -17,6 +17,7 @@ const FreshNewsSchema = new mongoose.Schema(
       required: true,
       default: false,
     },
+    isActive: {type: Boolean,default: true,},
   },
   { timestamps: true }
 );

@@ -5,6 +5,7 @@ const PressSchema = new mongoose.Schema({
   link: { type: String, default: "" },
   alt: { type: String, required: true },
   order: { type: Number, default: 0 },
+  isActive: {type: Boolean,default: true,},
 });
 
 module.exports = mongoose.model("Press", PressSchema);

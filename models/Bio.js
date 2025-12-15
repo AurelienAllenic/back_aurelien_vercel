@@ -5,6 +5,7 @@ const BioSchema = new mongoose.Schema({
   image: { type: String, required: false },
   content: { type: String, required: false },
   signature: { type: String, required: false },
+  isActive: {type: Boolean,default: true,},
 });
 
 module.exports = mongoose.model("Bio", BioSchema);

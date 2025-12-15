@@ -8,7 +8,8 @@ const RadioSchema = new mongoose.Schema({
     firstVideo: { type: String, required: false },
     secondVideo: { type: String, required: false },
     thirdVideo: { type: String, required: false },
-    id: { type: String, unique: true }
+    id: { type: String, unique: true },
+    isActive: {type: Boolean,default: true,},
 });
 
 module.exports = mongoose.model('Radio', RadioSchema);

@@ -11,6 +11,7 @@ const SmartLinkV2Schema = new mongoose.Schema({
     ref: "Folder",
     required: false,
   },
+  isActive: {type: Boolean,default: true,},
 });
 
 module.exports = mongoose.model("SmartLinkV2", SmartLinkV2Schema);

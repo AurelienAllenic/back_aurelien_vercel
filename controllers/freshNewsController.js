@@ -3,11 +3,12 @@ import FreshNews from "../models/FreshNews.js";
 // 🧩 Créer ou mettre à jour l’unique Fresh News
 export const upsertFreshNews = async (req, res) => {
   try {
-    const { title, link, isInternal } = req.body;
+    const { title, link, isInternal, isActive } = req.body;
     const news = await FreshNews.ensureSingleInstance({
       title,
       link,
       isInternal,
+      isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
     });
     res.status(200).json(news);
   } catch (error) {

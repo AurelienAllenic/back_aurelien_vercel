@@ -13,6 +13,7 @@ exports.addSingle = async (req, res) => {
     youtubeEmbed,
     social,
     classImg,
+    isActive,
   } = req.body;
 
   // Les fichiers uploadés via CloudinaryStorage
@@ -62,6 +63,7 @@ exports.addSingle = async (req, res) => {
       compositor,
       alt,
       youtubeEmbed: youtubeEmbed ?? "",
+      isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
       social: social ? JSON.parse(social) : {},
     });
 
@@ -127,6 +129,7 @@ exports.updateSingle = async (req, res) => {
     youtubeEmbed,
     social,
     classImg,
+    isActive,
   } = req.body;
 
   // Les fichiers uploadés via CloudinaryStorage
@@ -154,6 +157,9 @@ exports.updateSingle = async (req, res) => {
       updateData.youtubeEmbed = youtubeEmbed ?? "";
     if (social !== undefined) updateData.social = JSON.parse(social);
     if (classImg !== undefined) updateData.classImg = classImg;
+    if (isActive !== undefined) {
+      updateData.isActive = isActive === "true" || isActive === true;
+    }
 
     // Gestion de l'index
     if (index !== undefined) {

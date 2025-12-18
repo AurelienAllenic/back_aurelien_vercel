@@ -48,7 +48,7 @@ app.use(
       sameSite: "none",
       maxAge: 1000 * 60 * 60 * 24,
       path: "/",
-      partitioned: true, // ⚡ AJOUTER CETTE LIGNE - Support CHIPS
+      //partitioned: true,
     },
   })
 );

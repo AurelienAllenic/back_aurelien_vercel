@@ -33,22 +33,22 @@ app.use(bodyParser.urlencoded({ limit: "15mb", extended: true }));
 // --- CONFIGURATION DES SESSIONS ---
 app.use(
   session({
-    name: "paro.sid", // ⚡ Nom explicite du cookie
+    name: "paro.sid",
     secret: process.env.SESSION_SECRET || "secret_key",
-    resave: false,
+    resave: true,
     saveUninitialized: false,
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_SECRET_KEY,
       collectionName: "sessions",
     }),
-    proxy: true, // ⚡ IMPORTANT pour Vercel
+    proxy: true,
+    rolling: true,
     cookie: {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 24,
       path: "/",
-      //partitioned: true,
     },
   })
 );

@@ -44,17 +44,20 @@ exports.login = async (req, res) => {
     req.session.userId = user._id;
     req.session.username = user.username;
 
-    // ✅✅ AJOUTER CETTE LIGNE - Sauvegarder explicitement la session
-    req.session.save((err) => {
-      if (err) {
-        console.error("Erreur lors de la sauvegarde de la session :", err);
-        return res.status(500).json({ message: "Erreur de session." });
-      }
-
-      res.status(200).json({
-        message: "Connexion réussie.",
-        user: { id: user._id, username: user.username },
+    // Sauvegarder la session
+    await new Promise((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) {
+          console.error("Erreur lors de la sauvegarde de la session :", err);
+          return reject(err);
+        }
+        resolve();
       });
+    });
+
+    res.status(200).json({
+      message: "Connexion réussie.",
+      user: { id: user._id, username: user.username },
     });
 
   } catch (error) {
@@ -74,7 +77,7 @@ exports.logout = (req, res) => {
     }
 
     // Supprimer le cookie de session
-    res.clearCookie("paro.sid", { // ⚡ Utilisez le même nom
+    res.clearCookie("paro.sid", {
       path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

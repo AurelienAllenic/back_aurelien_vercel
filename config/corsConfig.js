@@ -32,7 +32,7 @@ const corsOptions = {
 
     if (allowedOrigins.includes(origin)) {
       console.log("✅ [CORS] Origine autorisée :", origin);
-      callback(null, true);
+      callback(null, origin); // ✅ CHANGÉ : Renvoyer l'origine exacte au lieu de true
     } else {
       console.log("❌ [CORS] Origine REFUSÉE :", origin);
       callback(new Error("CORS policy: Origin not allowed"));

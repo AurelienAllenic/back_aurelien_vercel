@@ -35,20 +35,20 @@ app.use(
   session({
     name: "paro.sid",
     secret: process.env.SESSION_SECRET || "secret_key",
-    resave: true,
+    resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_SECRET_KEY,
       collectionName: "sessions",
     }),
     proxy: true,
-    rolling: true,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 24,
       path: "/",
+      partitioned: process.env.NODE_ENV === "production", // ⚡ Support CHIPS pour Chrome
     },
   })
 );

@@ -193,20 +193,43 @@ exports.deleteBlock = async (req, res) => {
 // Réorganiser les blocs (changer l'ordre)
 exports.reorderBlocks = async (req, res) => {
   try {
-    const { blocks } = req.body; // Array d'objets { id, order }
+    // Accepter soit "orderedBlocks" (du frontend) soit "blocks" (ancien format)
+    const blocksArray = req.body.orderedBlocks || req.body.blocks;
     
-    const updatePromises = blocks.map(({ id, order }) =>
-      LinktreeBlock.findByIdAndUpdate(id, { order })
-    );
+    if (!Array.isArray(blocksArray)) {
+      return res.status(400).json({ error: "Données invalides : tableau attendu" });
+    }
+    
+    // Mapper les données : accepter _id ou id
+    const updatePromises = blocksArray.map(({ _id, id, order }) => {
+      const blockId = _id || id; // Utiliser _id en priorité, sinon id
+      
+      if (!blockId || !mongoose.Types.ObjectId.isValid(blockId)) {
+        throw new Error(`ID invalide : ${blockId}`);
+      }
+      
+      if (order === undefined || order === null) {
+        throw new Error(`Ordre manquant pour le bloc ${blockId}`);
+      }
+      
+      return LinktreeBlock.findByIdAndUpdate(
+        blockId, 
+        { order: parseInt(order) },
+        { new: true }
+      );
+    });
     
     await Promise.all(updatePromises);
     
     res.status(200).json({ 
       success: true, 
-      message: "Ordre mis à jour" 
+      message: "Ordre mis à jour avec succès" 
     });
   } catch (error) {
     console.error("Erreur réorganisation:", error);
-    res.status(500).json({ error: "Erreur lors de la réorganisation" });
+    res.status(500).json({ 
+      error: "Erreur lors de la réorganisation",
+      message: error.message 
+    });
   }
 };

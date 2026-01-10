@@ -3,7 +3,7 @@ const Live = require("../models/Live");
 
 // Ajouter un Live
 exports.addLive = async (req, res) => {
-  const { id, title, link, date } = req.body;
+  const { id, title, link, date, isActive } = req.body;
 
   // Vérifier les champs obligatoires
   if (!id || !title || !link || !date) {
@@ -40,6 +40,7 @@ exports.addLive = async (req, res) => {
       title,
       link,
       date,
+      isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
     });
 
     await newLive.save();
@@ -54,8 +55,22 @@ exports.addLive = async (req, res) => {
   }
 };
 
-// Récupérer tous les Lives
+// Récupérer tous les Lives (pour le frontend public - uniquement actifs)
 exports.findAllLives = async (req, res) => {
+  try {
+    const lives = await Live.find({ isActive: true }).sort({ id: 1 });
+    res.status(200).json({ message: "Liste des Lives", data: lives });
+  } catch (error) {
+    console.error("❌ Erreur lors de la récupération des Lives :", error);
+    res.status(400).json({
+      message: "Erreur lors de la récupération des Lives",
+      error: error.message,
+    });
+  }
+};
+
+// Récupérer tous les Lives (pour le backoffice - actifs et inactifs)
+exports.findAllLivesAdmin = async (req, res) => {
   try {
     const lives = await Live.find().sort({ id: 1 });
     res.status(200).json({ message: "Liste des Lives", data: lives });
@@ -95,7 +110,7 @@ exports.findOneLive = async (req, res) => {
 // Mettre à jour un Live
 exports.updateLive = async (req, res) => {
   const { id } = req.params; // MongoDB _id
-  const { orderId, title, link, date } = req.body; // Use orderId to avoid confusion with MongoDB _id
+  const { orderId, title, link, date, isActive } = req.body; // Use orderId to avoid confusion with MongoDB _id
 
   try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -106,6 +121,9 @@ exports.updateLive = async (req, res) => {
     if (title) updateData.title = title;
     if (link) updateData.link = link;
     if (date) updateData.date = date;
+    if (isActive !== undefined) {
+      updateData.isActive = isActive === "true" || isActive === true;
+    }
 
     // Gérer l'id (display order) si fourni
     if (orderId !== undefined) {

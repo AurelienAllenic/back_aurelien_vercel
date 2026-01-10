@@ -119,7 +119,8 @@ router.delete("/singles/:id", auth, singleController.deleteSingle);
 
 // LIVE ROUTES
 router.post("/add-live", auth, uploadImage, liveController.addLive);
-router.get("/lives", liveController.findAllLives);
+router.get("/lives", liveController.findAllLives); // Frontend public - uniquement actifs
+router.get("/all-lives", auth, liveController.findAllLivesAdmin); // Backoffice - tous les lives
 router.get("/lives/:id", liveController.findOneLive);
 router.put("/lives/:id", auth, uploadImage, liveController.updateLive);
 router.delete("/lives/:id", auth, liveController.deleteLive);

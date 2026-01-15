@@ -16,6 +16,7 @@ exports.getSocialLinks = async (req, res) => {
         amazonMusic: "",
         soundcloud: "",
         qobuz: "",
+        bandcamp: "",
       });
     }
     res.status(200).json(socialLinks);

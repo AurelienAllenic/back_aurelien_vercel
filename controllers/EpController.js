@@ -79,6 +79,7 @@ exports.addEp = async (req, res) => {
       link,
       ending: ending || "", // Gérer ending comme optionnel, chaîne vide par défaut
       isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
+      // social peut contenir : spotify, deezer, youtube, bandcamp, apple, amazon, tidal, itunes, soundCloud
       social: social ? JSON.parse(social) : {},
     });
 
@@ -162,6 +163,7 @@ exports.updateEp = async (req, res) => {
     if (compositor) updateData.compositor = compositor;
     if (alt) updateData.alt = alt;
     if (youtubeEmbed) updateData.youtubeEmbed = youtubeEmbed;
+    // social peut contenir : spotify, deezer, youtube, bandcamp, apple, amazon, tidal, itunes, soundCloud
     if (social) updateData.social = JSON.parse(social);
     if (classImg) updateData.classImg = classImg;
     if (description) updateData.description = description;

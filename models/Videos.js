@@ -24,6 +24,10 @@ const videoSchema = new mongoose.Schema(
       unique: true,
     },
     isActive: {type: Boolean,default: true,},
+    order: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

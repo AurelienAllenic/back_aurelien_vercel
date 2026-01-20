@@ -92,6 +92,7 @@ router.get("/videos", videoController.findAllVideos);
 router.get("/videos/:id", videoController.findOneVideo);
 router.put("/videos/:id", auth, uploadImage, videoController.updateVideo);
 router.delete("/videos/:id", auth, videoController.deleteVideo);
+router.put("/order-videos", auth, videoController.updateOrder);
 
 // EP ROUTES
 router.post("/add-ep", auth, uploadImage, epController.addEp);

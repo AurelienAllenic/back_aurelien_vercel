@@ -28,6 +28,10 @@ exports.addVideo = async (req, res) => {
 
     // Suppression du fichier temporaire supprimée
 
+    // Déterminer l'ordre automatiquement
+    const lastVideo = await Video.findOne().sort({ order: -1 });
+    const newOrder = lastVideo ? lastVideo.order + 1 : 0;
+
     const newVideo = new Video({
       link,
       alt,
@@ -35,6 +39,7 @@ exports.addVideo = async (req, res) => {
       title,
       modifiedTitleVideo,
       isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
+      order: newOrder,
     });
 
     await newVideo.save();
@@ -54,7 +59,7 @@ exports.addVideo = async (req, res) => {
 // Récupérer toutes les vidéos
 exports.findAllVideos = async (req, res) => {
   try {
-    const videos = await Video.find();
+    const videos = await Video.find().sort({ order: 1 });
     res.status(200).json({ message: "Liste des vidéos", data: videos });
   } catch (error) {
     console.error("❌ Erreur lors de la récupération des vidéos :", error);
@@ -210,5 +215,58 @@ exports.deleteVideo = async (req, res) => {
       message: "Erreur lors de la suppression de la vidéo",
       error: error.message,
     });
+  }
+};
+
+// **Mettre à jour l'ordre des vidéos**
+exports.updateOrder = async (req, res) => {
+  try {
+    const { orderedVideos } = req.body;
+    if (!Array.isArray(orderedVideos)) {
+      console.error("❌ ERREUR: orderedVideos doit être un tableau !");
+      return res
+        .status(400)
+        .json({ error: "orderedVideos doit être un tableau" });
+    }
+
+    const currentOrders = {};
+    const videoDocs = await Video.find();
+
+    videoDocs.forEach((doc) => {
+      currentOrders[doc._id.toString()] = doc.order;
+    });
+
+    for (const video of orderedVideos) {
+      const { _id, order: newOrder } = video;
+
+      if (!mongoose.Types.ObjectId.isValid(_id)) {
+        console.error(`❌ ID invalide : ${_id}`);
+        return res.status(400).json({ error: `ID invalide : ${_id}` });
+      }
+
+      const oldOrder = currentOrders[_id];
+
+      if (oldOrder !== newOrder) {
+        const swappedVideo = await Video.findOne({ order: newOrder });
+
+        if (swappedVideo) {
+          await Video.updateOne(
+            { _id: swappedVideo._id },
+            { $set: { order: oldOrder } }
+          );
+        }
+
+        await Video.updateOne(
+          { _id: new mongoose.Types.ObjectId(_id) },
+          { $set: { order: newOrder } }
+        );
+      }
+    }
+
+    const updatedVideos = await Video.find().sort({ order: 1 });
+    res.json({ message: "Ordre mis à jour avec succès !" });
+  } catch (error) {
+    console.error("❌ Erreur serveur dans updateOrder :", error);
+    res.status(500).json({ error: error.message });
   }
 };

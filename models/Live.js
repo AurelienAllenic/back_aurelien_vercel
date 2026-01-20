@@ -19,6 +19,10 @@ const liveSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    lieu: {
+      type: String,
+      required: false,
+    },
     isActive: {type: Boolean,default: true,},
   },
   {

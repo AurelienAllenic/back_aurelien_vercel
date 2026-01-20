@@ -3,7 +3,7 @@ const Live = require("../models/Live");
 
 // Ajouter un Live
 exports.addLive = async (req, res) => {
-  const { id, title, link, date, isActive } = req.body;
+  const { id, title, link, date, lieu, isActive } = req.body;
 
   // Vérifier les champs obligatoires
   if (!id || !title || !link || !date) {
@@ -40,6 +40,7 @@ exports.addLive = async (req, res) => {
       title,
       link,
       date,
+      lieu: lieu || undefined,
       isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
     });
 
@@ -110,7 +111,7 @@ exports.findOneLive = async (req, res) => {
 // Mettre à jour un Live
 exports.updateLive = async (req, res) => {
   const { id } = req.params; // MongoDB _id
-  const { orderId, title, link, date, isActive } = req.body; // Use orderId to avoid confusion with MongoDB _id
+  const { orderId, title, link, date, lieu, isActive } = req.body; // Use orderId to avoid confusion with MongoDB _id
 
   try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -121,6 +122,7 @@ exports.updateLive = async (req, res) => {
     if (title) updateData.title = title;
     if (link) updateData.link = link;
     if (date) updateData.date = date;
+    if (lieu !== undefined) updateData.lieu = lieu || null;
     if (isActive !== undefined) {
       updateData.isActive = isActive === "true" || isActive === true;
     }

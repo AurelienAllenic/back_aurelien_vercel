@@ -30,24 +30,29 @@ const getMessageModel = async () => {
     const { connectDBAurelien } = require("../config/dbAurelien");
     aurelienConnection = await connectDBAurelien();
     
-    // Si toujours pas prête après connexion, attendre un peu
+    // Si la connexion est en cours (readyState === 2), attendre qu'elle se termine
     if (aurelienConnection && aurelienConnection.readyState === 2) {
-      console.log('🔄 [Message] Connexion en cours, attente...');
+      console.log('🔄 [Message] Connexion en cours, attente jusqu\'à 6 secondes...');
       await new Promise((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 60; // 60 * 100ms = 6 secondes
+        
         const checkConnection = setInterval(() => {
-          if (aurelienConnection.readyState === 1) {
+          attempts++;
+          const state = aurelienConnection.readyState;
+          
+          if (state === 1) {
+            // Connecté !
+            console.log('✅ [Message] Connexion établie après attente');
             clearInterval(checkConnection);
             resolve();
-          } else if (aurelienConnection.readyState === 0) {
+          } else if (state === 0 || attempts >= maxAttempts) {
+            // Déconnecté ou timeout
+            console.log(`⚠️ [Message] Connexion non établie (état: ${state}, tentatives: ${attempts})`);
             clearInterval(checkConnection);
             resolve();
           }
         }, 100);
-        // Timeout après 3 secondes
-        setTimeout(() => {
-          clearInterval(checkConnection);
-          resolve();
-        }, 3000);
       });
     }
   }

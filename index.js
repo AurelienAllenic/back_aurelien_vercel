@@ -23,8 +23,20 @@ const PORT = process.env.PORT || 3000;
 
 // --- Connexion MongoDB ---
 connectDB();
+
 // --- Connexion MongoDB Aurelien (pour les messages) ---
-connectDBAurelien();
+// Attendre la connexion avec timeout pour ne pas bloquer le démarrage
+(async () => {
+  try {
+    await Promise.race([
+      connectDBAurelien(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout connexion Aurelien')), 10000))
+    ]);
+  } catch (error) {
+    console.warn('⚠️ Connexion MongoDB Aurelien non établie au démarrage:', error.message);
+    console.warn('⚠️ La connexion sera tentée à la première utilisation');
+  }
+})();
 
 // --- Middlewares globaux ---
 app.set("trust proxy", 1);

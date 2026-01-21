@@ -1,4 +1,5 @@
 const brevo = require('@getbrevo/brevo');
+const getMessageModel = require('../models/Message');
 
 // Initialiser l'API Brevo pour Aurelien (compte différent)
 const apiInstance = new brevo.TransactionalEmailsApi();
@@ -28,6 +29,22 @@ exports.handleAurelienContact = async (req, res) => {
       success: false, 
       error: 'Format d\'email invalide' 
     });
+  }
+
+  // Créer le message dans la base de données avant l'envoi
+  let messageDoc = null;
+  try {
+    const Message = getMessageModel();
+    messageDoc = new Message({
+      email,
+      message,
+      send: false,
+    });
+    await messageDoc.save();
+    console.log(`📝 Message créé en base de données (ID: ${messageDoc._id})`);
+  } catch (dbError) {
+    console.error('❌ Erreur lors de la création du message en BDD:', dbError);
+    // On continue quand même l'envoi de l'email
   }
 
   try {
@@ -203,6 +220,17 @@ exports.handleAurelienContact = async (req, res) => {
     await apiInstance.sendTransacEmail(confirmationEmail);
     console.log(`✅ Email confirmation envoyé à ${email}`);
 
+    // Mettre à jour le message : envoi réussi
+    if (messageDoc) {
+      try {
+        messageDoc.send = true;
+        await messageDoc.save();
+        console.log(`✅ Message mis à jour : envoyé avec succès (ID: ${messageDoc._id})`);
+      } catch (updateError) {
+        console.error('❌ Erreur lors de la mise à jour du message:', updateError);
+      }
+    }
+
     res.status(200).json({ 
       success: true, 
       message: 'Votre message a été envoyé avec succès ! Nous vous répondrons rapidement.' 
@@ -212,8 +240,22 @@ exports.handleAurelienContact = async (req, res) => {
     console.error('❌ Erreur Brevo (Aurelien):', error);
     
     // Log détaillé pour debug
+    let errorMessage = error.message;
     if (error.response) {
       console.error('Détails:', error.response.body);
+      errorMessage = JSON.stringify(error.response.body);
+    }
+    
+    // Mettre à jour le message : envoi échoué
+    if (messageDoc) {
+      try {
+        messageDoc.send = false;
+        messageDoc.error = errorMessage;
+        await messageDoc.save();
+        console.log(`❌ Message mis à jour : erreur d'envoi (ID: ${messageDoc._id})`);
+      } catch (updateError) {
+        console.error('❌ Erreur lors de la mise à jour du message:', updateError);
+      }
     }
     
     res.status(500).json({ 

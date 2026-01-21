@@ -6,6 +6,7 @@ const passport = require("passport");
 require("dotenv").config();
 
 const connectDB = require("./config/db");
+const { connectDBAurelien } = require("./config/dbAurelien");
 const corsConfig = require("./config/corsConfig");
 const limiter = require("./config/rateLimiter");
 
@@ -22,6 +23,8 @@ const PORT = process.env.PORT || 3000;
 
 // --- Connexion MongoDB ---
 connectDB();
+// --- Connexion MongoDB Aurelien (pour les messages) ---
+connectDBAurelien();
 
 // --- Middlewares globaux ---
 app.use(corsConfig);

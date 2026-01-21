@@ -21,6 +21,7 @@ const freshNewsController = require("../controllers/freshNewsController");
 const paroContactController = require("../controllers/paroContactController");
 const linktreeBlockController = require("../controllers/linktreeBlockController");
 const linktreeProfileController = require("../controllers/linktreeProfileController");
+const messageController = require("../controllers/messageController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -155,6 +156,11 @@ router.post("/fresh-news", freshNewsController.upsertFreshNews);
 
 // PARO CONTACT ROUTE
 router.post("/paro-contact", paroContactController.handleParoContact);
+
+// MESSAGE ROUTES (aurelienallenic.fr)
+router.get("/messages", auth, messageController.findAllMessages);
+router.get("/messages/:id", auth, messageController.findOneMessage);
+router.delete("/messages/:id", auth, messageController.deleteMessage);
 
 // ========== LINKTREE BLOCKS ==========
 // Routes publiques (pas d'auth)

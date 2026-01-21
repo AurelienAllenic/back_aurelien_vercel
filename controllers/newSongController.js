@@ -4,10 +4,14 @@ const cloudinary = require("cloudinary").v2;
 
 // Ajouter une nouvelle chanson
 exports.addNewSong = async (req, res) => {
+  // Debug: afficher ce qui est reçu
+  console.log("📥 req.body:", req.body);
+  console.log("📥 req.file:", req.file);
+  
   const { title, date, isActive } = req.body;
 
-  // Les fichiers uploadés via CloudinaryStorage
-  const imageFile = req.files?.image?.[0];
+  // Le fichier uploadé via CloudinaryStorage (upload.single("image") met le fichier dans req.file)
+  const imageFile = req.file;
 
   if (!title || !date || !imageFile) {
     return res.status(400).json({
@@ -26,8 +30,8 @@ exports.addNewSong = async (req, res) => {
     }
 
     // ✅ Avec CloudinaryStorage, le fichier est déjà uploadé
-    // L'URL Cloudinary est dans file.path
-    const imageUrl = imageFile.path;
+    // L'URL Cloudinary est dans file.path (ou file.secure_url selon la config)
+    const imageUrl = imageFile.path || imageFile.secure_url;
 
     const newSong = new NewSong({
       title,
@@ -107,8 +111,8 @@ exports.updateNewSong = async (req, res) => {
   const { id } = req.params;
   const { title, date, isActive } = req.body;
 
-  // Les fichiers uploadés via CloudinaryStorage
-  const imageFile = req.files?.image?.[0];
+  // Le fichier uploadé via CloudinaryStorage (upload.single("image") met le fichier dans req.file)
+  const imageFile = req.file;
 
   try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -158,7 +162,7 @@ exports.updateNewSong = async (req, res) => {
         }
       }
       // ✅ Avec CloudinaryStorage, le fichier est déjà uploadé
-      updateData.image = imageFile.path;
+      updateData.image = imageFile.path || imageFile.secure_url;
     }
 
     // Vérifier qu'il y a des données à mettre à jour

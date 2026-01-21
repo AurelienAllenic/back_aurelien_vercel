@@ -30,7 +30,8 @@ const getMessageModel = () => {
     if (aurelienConnection.models.Message) {
       return aurelienConnection.models.Message;
     }
-    const schema = new aurelienConnection.Schema(messageSchemaDefinition, {
+    // Utiliser mongoose.Schema pour créer le schéma, puis la connexion pour créer le modèle
+    const schema = new mongoose.Schema(messageSchemaDefinition, {
       timestamps: true,
     });
     return aurelienConnection.model("Message", schema);

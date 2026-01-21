@@ -207,12 +207,12 @@ exports.handleAurelienContact = async (req, res) => {
     await apiInstance.sendTransacEmail(confirmationEmail);
     console.log(`✅ Email confirmation envoyé à ${email}`);
 
-    // ⚡ Créer le message AVANT de répondre (avec timeout très court)
+    // ⚡ Créer le message AVANT de répondre (avec timeout)
     console.log('🔄 [Message] Début création message en BDD...');
     try {
       const Message = await Promise.race([
         getMessageModel(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout récupération modèle')), 2000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout récupération modèle')), 5000))
       ]);
       
       console.log('🔄 [Message] Modèle récupéré:', Message ? '✅' : '❌');
@@ -227,7 +227,7 @@ exports.handleAurelienContact = async (req, res) => {
         
         await Promise.race([
           messageDoc.save(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde')), 2000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde')), 3000))
         ]);
         console.log(`✅ [Message] Message créé en BDD (ID: ${messageDoc._id})`);
       } else {
@@ -259,7 +259,7 @@ exports.handleAurelienContact = async (req, res) => {
     try {
       const Message = await Promise.race([
         getMessageModel(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout récupération modèle')), 2000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout récupération modèle')), 5000))
       ]);
       
       if (Message) {
@@ -271,7 +271,7 @@ exports.handleAurelienContact = async (req, res) => {
         });
         await Promise.race([
           messageDoc.save(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde')), 2000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde')), 3000))
         ]);
         console.log(`✅ [Message] Message créé en BDD avec erreur (ID: ${messageDoc._id})`);
       }

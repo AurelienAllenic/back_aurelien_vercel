@@ -26,8 +26,30 @@ const getMessageModel = async () => {
   
   // Si la connexion n'existe pas ou n'est pas prête, essayer de se connecter
   if (!aurelienConnection || aurelienConnection.readyState !== 1) {
+    console.log('🔄 [Message] Connexion non prête, tentative de connexion...');
     const { connectDBAurelien } = require("../config/dbAurelien");
     aurelienConnection = await connectDBAurelien();
+    
+    // Si toujours pas prête après connexion, attendre un peu
+    if (aurelienConnection && aurelienConnection.readyState === 2) {
+      console.log('🔄 [Message] Connexion en cours, attente...');
+      await new Promise((resolve) => {
+        const checkConnection = setInterval(() => {
+          if (aurelienConnection.readyState === 1) {
+            clearInterval(checkConnection);
+            resolve();
+          } else if (aurelienConnection.readyState === 0) {
+            clearInterval(checkConnection);
+            resolve();
+          }
+        }, 100);
+        // Timeout après 3 secondes
+        setTimeout(() => {
+          clearInterval(checkConnection);
+          resolve();
+        }, 3000);
+      });
+    }
   }
   
   // Si connexion Aurelien disponible et prête, l'utiliser

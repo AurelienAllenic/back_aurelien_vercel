@@ -18,10 +18,34 @@ const connectDBAurelien = async () => {
             maxIdleTimeMS: 30000,
         });
 
-        console.log('✅ Connexion à MongoDB Aurelien réussie !');
+        // Attendre que la connexion soit prête
+        await new Promise((resolve, reject) => {
+            if (aurelienConnection.readyState === 1) {
+                // Déjà connecté
+                resolve();
+            } else {
+                aurelienConnection.once('connected', () => {
+                    console.log('✅ Connexion à MongoDB Aurelien établie !');
+                    resolve();
+                });
+                aurelienConnection.once('error', (err) => {
+                    console.error('❌ Erreur de connexion à MongoDB Aurelien :', err);
+                    reject(err);
+                });
+                // Timeout de sécurité
+                setTimeout(() => {
+                    if (aurelienConnection.readyState !== 1) {
+                        reject(new Error('Timeout de connexion MongoDB Aurelien'));
+                    }
+                }, 10000);
+            }
+        });
+
+        console.log('✅ Connexion à MongoDB Aurelien prête !');
         return aurelienConnection;
     } catch (error) {
         console.error('❌ Erreur de connexion à MongoDB Aurelien :', error);
+        aurelienConnection = null;
         // Ne pas faire process.exit pour ne pas bloquer l'app principale
         return null;
     }

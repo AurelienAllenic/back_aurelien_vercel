@@ -31,35 +31,31 @@ exports.handleAurelienContact = async (req, res) => {
     });
   }
 
-  // Créer le message dans la base de données (non-bloquant avec timeout)
+  // Créer le message dans la base de données
   let messageDoc = null;
-  const createMessagePromise = (async () => {
-    try {
-      const Message = getMessageModel();
-      if (!Message) {
-        console.warn('⚠️ Modèle Message non disponible');
-        return null;
-      }
+  try {
+    const Message = getMessageModel();
+    if (!Message) {
+      console.warn('⚠️ Modèle Message non disponible - connexion MongoDB Aurelien peut-être non initialisée');
+    } else {
       messageDoc = new Message({
         email,
         message,
         send: false,
       });
-      // Timeout de 3 secondes max pour la sauvegarde
+      // Sauvegarder avec timeout de 5 secondes
       await Promise.race([
         messageDoc.save(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde message')), 5000))
       ]);
       console.log(`📝 Message créé en base de données (ID: ${messageDoc._id})`);
-      return messageDoc;
-    } catch (dbError) {
-      console.error('❌ Erreur lors de la création du message en BDD:', dbError.message);
-      // On continue quand même l'envoi de l'email
-      return null;
     }
-  })();
-  
-  // Ne pas attendre la création du message, continuer avec l'envoi de l'email
+  } catch (dbError) {
+    console.error('❌ Erreur lors de la création du message en BDD:', dbError.message);
+    console.error('❌ Stack:', dbError.stack);
+    // On continue quand même l'envoi de l'email
+    messageDoc = null;
+  }
 
   try {
     // 1️⃣ Email pour vous (admin Aurelien)
@@ -234,29 +230,24 @@ exports.handleAurelienContact = async (req, res) => {
     await apiInstance.sendTransacEmail(confirmationEmail);
     console.log(`✅ Email confirmation envoyé à ${email}`);
 
-    // Répondre rapidement au client
+    // Mettre à jour le message : envoi réussi
+    if (messageDoc) {
+      try {
+        messageDoc.send = true;
+        await Promise.race([
+          messageDoc.save(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+        ]);
+        console.log(`✅ Message mis à jour : envoyé avec succès (ID: ${messageDoc._id})`);
+      } catch (updateError) {
+        console.error('❌ Erreur lors de la mise à jour du message:', updateError.message);
+      }
+    }
+
     res.status(200).json({ 
       success: true, 
       message: 'Votre message a été envoyé avec succès ! Nous vous répondrons rapidement.' 
     });
-
-    // Mettre à jour le message en arrière-plan (non-bloquant)
-    (async () => {
-      try {
-        // Attendre que le message soit créé (si pas encore fait)
-        const doc = await createMessagePromise;
-        if (doc) {
-          doc.send = true;
-          await Promise.race([
-            doc.save(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
-          ]);
-          console.log(`✅ Message mis à jour : envoyé avec succès (ID: ${doc._id})`);
-        }
-      } catch (updateError) {
-        console.error('❌ Erreur lors de la mise à jour du message:', updateError.message);
-      }
-    })();
 
   } catch (error) {
     console.error('❌ Erreur Brevo (Aurelien):', error);
@@ -268,28 +259,24 @@ exports.handleAurelienContact = async (req, res) => {
       errorMessage = JSON.stringify(error.response.body);
     }
     
-    // Répondre rapidement au client même en cas d'erreur
+    // Mettre à jour le message : envoi échoué
+    if (messageDoc) {
+      try {
+        messageDoc.send = false;
+        messageDoc.error = errorMessage;
+        await Promise.race([
+          messageDoc.save(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+        ]);
+        console.log(`❌ Message mis à jour : erreur d'envoi (ID: ${messageDoc._id})`);
+      } catch (updateError) {
+        console.error('❌ Erreur lors de la mise à jour du message:', updateError.message);
+      }
+    }
+    
     res.status(500).json({ 
       success: false, 
       error: 'Une erreur est survenue lors de l\'envoi. Veuillez réessayer dans quelques instants.' 
     });
-
-    // Mettre à jour le message en arrière-plan (non-bloquant)
-    (async () => {
-      try {
-        const doc = await createMessagePromise;
-        if (doc) {
-          doc.send = false;
-          doc.error = errorMessage;
-          await Promise.race([
-            doc.save(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
-          ]);
-          console.log(`❌ Message mis à jour : erreur d'envoi (ID: ${doc._id})`);
-        }
-      } catch (updateError) {
-        console.error('❌ Erreur lors de la mise à jour du message:', updateError.message);
-      }
-    })();
   }
 };

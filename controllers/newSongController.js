@@ -8,7 +8,7 @@ exports.addNewSong = async (req, res) => {
   console.log("📥 req.body:", req.body);
   console.log("📥 req.file:", req.file);
   
-  const { title, date, isActive } = req.body;
+  const { title, date, link, isActive } = req.body;
 
   // Le fichier uploadé via CloudinaryStorage (upload.single("image") met le fichier dans req.file)
   const imageFile = req.file;
@@ -37,6 +37,7 @@ exports.addNewSong = async (req, res) => {
       title,
       date: songDate,
       image: imageUrl,
+      link: link || undefined,
       isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
     });
 
@@ -109,7 +110,7 @@ exports.findOneNewSong = async (req, res) => {
 // Mettre à jour une nouvelle chanson
 exports.updateNewSong = async (req, res) => {
   const { id } = req.params;
-  const { title, date, isActive } = req.body;
+  const { title, date, link, isActive } = req.body;
 
   // Le fichier uploadé via CloudinaryStorage (upload.single("image") met le fichier dans req.file)
   const imageFile = req.file;
@@ -137,6 +138,7 @@ exports.updateNewSong = async (req, res) => {
       }
       updateData.date = songDate;
     }
+    if (link !== undefined) updateData.link = link || null;
     if (isActive !== undefined) {
       updateData.isActive = isActive === "true" || isActive === true;
     }

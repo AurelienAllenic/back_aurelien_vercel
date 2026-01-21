@@ -14,6 +14,10 @@ const newSongSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    link: {
+      type: String,
+      required: false,
+    },
     isActive: {
       type: Boolean,
       default: true,

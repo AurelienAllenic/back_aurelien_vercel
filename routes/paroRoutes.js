@@ -138,7 +138,7 @@ router.delete("/new-songs/:id", auth, newSongController.deleteNewSong);
 
 // SECTION ROUTES
 router.post("/add-section", auth, sectionController.addSection);
-router.get("/sections", sectionController.findAllSections); // Frontend public - uniquement actives
+router.get("/sections", sectionController.findAllSections); // Frontend public - toutes les sections (actives et inactives) pour vérifier isActive
 router.get("/all-sections", auth, sectionController.findAllSectionsAdmin); // Backoffice - toutes les sections (IMPORTANT: avant /sections/:id)
 router.get("/sections/:id", sectionController.findOneSection);
 router.put("/sections/:id", auth, sectionController.updateSection);

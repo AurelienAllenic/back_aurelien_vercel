@@ -39,10 +39,14 @@ exports.addSection = async (req, res) => {
   }
 };
 
-// Récupérer toutes les sections (pour le frontend public - uniquement actives)
+// Récupérer toutes les sections (pour le frontend public - actives et inactives)
+// Retourne toutes les sections pour que le frontend puisse vérifier le statut isActive
 exports.findAllSections = async (req, res) => {
   try {
-    const sections = await Section.find({ isActive: true }).sort({ title: 1 });
+    console.log("📥 [Sections] Requête publique findAllSections reçue");
+    // Retourner TOUTES les sections (actives et inactives) pour que le frontend puisse vérifier isActive
+    const sections = await Section.find().sort({ title: 1 });
+    console.log(`✅ [Sections] ${sections.length} sections trouvées (actives et inactives)`);
     res.status(200).json({ message: "Liste des sections", data: sections });
   } catch (error) {
     console.error("❌ Erreur lors de la récupération des sections :", error);

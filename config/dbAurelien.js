@@ -9,13 +9,22 @@ const connectDBAurelien = async () => {
             return null;
         }
 
-        aurelienConnection = mongoose.createConnection(process.env.MONGO_SECRET_KEY_AURELIEN, {
-            serverSelectionTimeoutMS: 10000, // ⚡ Réduit à 10s pour éviter les timeouts Vercel
-            socketTimeoutMS: 8000, // ⚡ Réduit à 8s
-            connectTimeoutMS: 10000, // ⚡ Réduit à 10s
+        // Vérifier si l'URI contient déjà des options SSL
+        const mongoUri = process.env.MONGO_SECRET_KEY_AURELIEN;
+        
+        aurelienConnection = mongoose.createConnection(mongoUri, {
+            serverSelectionTimeoutMS: 15000, // ⚡ Augmenté à 15s pour MongoDB Atlas
+            socketTimeoutMS: 45000, // ⚡ Augmenté pour MongoDB Atlas
+            connectTimeoutMS: 15000, // ⚡ Augmenté à 15s
             maxPoolSize: 5,
             minPoolSize: 1,
             maxIdleTimeMS: 30000,
+            // Options SSL/TLS pour MongoDB Atlas
+            tls: true,
+            tlsAllowInvalidCertificates: false,
+            tlsAllowInvalidHostnames: false,
+            retryWrites: true,
+            retryReads: true,
         });
 
         // Attendre que la connexion soit prête

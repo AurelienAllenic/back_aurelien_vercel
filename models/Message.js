@@ -41,20 +41,27 @@ const getMessageModel = () => {
   
   if (aurelienConnection) {
     console.warn('⚠️ [Message] Connexion Aurelien existe mais n\'est pas prête (readyState:', aurelienConnection.readyState, ')');
+    console.warn('⚠️ [Message] État de la connexion:', {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting'
+    }[aurelienConnection.readyState] || 'unknown');
   } else {
-    console.warn('⚠️ [Message] Connexion Aurelien non disponible, utilisation de la connexion par défaut');
+    console.warn('⚠️ [Message] Connexion Aurelien non disponible');
   }
   
-  // Fallback sur la connexion par défaut
-  if (mongoose.models.Message) {
-    console.log('📦 [Message] Utilisation du modèle sur connexion par défaut');
-    return mongoose.models.Message;
+  // ⚠️ IMPORTANT: Ne pas utiliser le fallback sur la connexion par défaut
+  // Si la connexion Aurelien n'est pas disponible, on ne peut pas créer le message
+  // Cela évite de mélanger les données entre les deux bases
+  if (!aurelienConnection || aurelienConnection.readyState !== 1) {
+    console.error('❌ [Message] Impossible de créer le message : connexion Aurelien non disponible');
+    return null; // Retourner null pour indiquer que le modèle n'est pas disponible
   }
-  const schema = new mongoose.Schema(messageSchemaDefinition, {
-    timestamps: true,
-  });
-  console.log('📦 [Message] Création du modèle sur connexion par défaut');
-  return mongoose.model("Message", schema);
+  
+  // Si on arrive ici, c'est une erreur de logique
+  console.error('❌ [Message] Erreur de logique : connexion Aurelien devrait être disponible');
+  return null;
 };
 
 module.exports = getMessageModel;

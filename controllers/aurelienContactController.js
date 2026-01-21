@@ -31,12 +31,13 @@ exports.handleAurelienContact = async (req, res) => {
     });
   }
 
-  // Créer le message dans la base de données
+  // Créer le message dans la base de données Aurelien
   let messageDoc = null;
   try {
     const Message = getMessageModel();
     if (!Message) {
-      console.warn('⚠️ Modèle Message non disponible - connexion MongoDB Aurelien peut-être non initialisée');
+      console.warn('⚠️ Modèle Message non disponible - connexion MongoDB Aurelien non initialisée ou non prête');
+      console.warn('⚠️ Le message ne sera pas sauvegardé en base de données, mais l\'email sera envoyé');
     } else {
       messageDoc = new Message({
         email,
@@ -48,10 +49,10 @@ exports.handleAurelienContact = async (req, res) => {
         messageDoc.save(),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde message')), 5000))
       ]);
-      console.log(`📝 Message créé en base de données (ID: ${messageDoc._id})`);
+      console.log(`📝 Message créé en base de données Aurelien (ID: ${messageDoc._id})`);
     }
   } catch (dbError) {
-    console.error('❌ Erreur lors de la création du message en BDD:', dbError.message);
+    console.error('❌ Erreur lors de la création du message en BDD Aurelien:', dbError.message);
     console.error('❌ Stack:', dbError.stack);
     // On continue quand même l'envoi de l'email
     messageDoc = null;

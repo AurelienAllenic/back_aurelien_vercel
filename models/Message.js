@@ -20,9 +20,15 @@ const messageSchemaDefinition = {
   },
 };
 
-// Fonction pour obtenir le modèle avec la bonne connexion
-const getMessageModel = () => {
-  const aurelienConnection = getAurelienConnection();
+// Fonction pour obtenir le modèle avec la bonne connexion (async pour attendre la connexion si nécessaire)
+const getMessageModel = async () => {
+  let aurelienConnection = getAurelienConnection();
+  
+  // Si la connexion n'existe pas ou n'est pas prête, essayer de se connecter
+  if (!aurelienConnection || aurelienConnection.readyState !== 1) {
+    const { connectDBAurelien } = require("../config/dbAurelien");
+    aurelienConnection = await connectDBAurelien();
+  }
   
   // Si connexion Aurelien disponible et prête, l'utiliser
   if (aurelienConnection && aurelienConnection.readyState === 1) {
@@ -48,20 +54,13 @@ const getMessageModel = () => {
       3: 'disconnecting'
     }[aurelienConnection.readyState] || 'unknown');
   } else {
-    console.warn('⚠️ [Message] Connexion Aurelien non disponible');
+    console.warn('⚠️ [Message] Connexion Aurelien non disponible après tentative de connexion');
   }
   
   // ⚠️ IMPORTANT: Ne pas utiliser le fallback sur la connexion par défaut
   // Si la connexion Aurelien n'est pas disponible, on ne peut pas créer le message
-  // Cela évite de mélanger les données entre les deux bases
-  if (!aurelienConnection || aurelienConnection.readyState !== 1) {
-    console.error('❌ [Message] Impossible de créer le message : connexion Aurelien non disponible');
-    return null; // Retourner null pour indiquer que le modèle n'est pas disponible
-  }
-  
-  // Si on arrive ici, c'est une erreur de logique
-  console.error('❌ [Message] Erreur de logique : connexion Aurelien devrait être disponible');
-  return null;
+  console.error('❌ [Message] Impossible de créer le message : connexion Aurelien non disponible');
+  return null; // Retourner null pour indiquer que le modèle n'est pas disponible
 };
 
 module.exports = getMessageModel;

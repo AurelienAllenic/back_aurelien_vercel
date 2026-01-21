@@ -34,7 +34,7 @@ exports.handleAurelienContact = async (req, res) => {
   // Créer le message dans la base de données Aurelien
   let messageDoc = null;
   try {
-    const Message = getMessageModel();
+    const Message = await getMessageModel();
     if (!Message) {
       console.warn('⚠️ Modèle Message non disponible - connexion MongoDB Aurelien non initialisée ou non prête');
       console.warn('⚠️ Le message ne sera pas sauvegardé en base de données, mais l\'email sera envoyé');

@@ -44,9 +44,16 @@ const connectDBAurelien = async () => {
             });
 
             // Utiliser asPromise() qui est plus fiable que les événements
+            console.log('🔄 [Aurelien] Attente de la connexion...');
             await aurelienConnection.asPromise();
             
-            console.log('✅ Connexion à MongoDB Aurelien établie et prête !');
+            console.log('✅ [Aurelien] Connexion à MongoDB Aurelien établie et prête !');
+            console.log('✅ [Aurelien] État de la connexion:', {
+              0: 'disconnected',
+              1: 'connected',
+              2: 'connecting',
+              3: 'disconnecting'
+            }[aurelienConnection.readyState] || 'unknown');
             connectionPromise = null; // Réinitialiser pour permettre de nouvelles tentatives
             return aurelienConnection;
         } catch (error) {

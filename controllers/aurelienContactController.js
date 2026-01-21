@@ -215,36 +215,44 @@ exports.handleAurelienContact = async (req, res) => {
 
     // ⚡ Créer le message en arrière-plan (non-bloquant)
     (async () => {
+      console.log('🔄 [Message] Début de la création du message en arrière-plan...');
       let messageDoc = null;
       try {
+        console.log('🔄 [Message] Tentative de récupération du modèle...');
         const Message = await getMessageModel();
+        console.log('🔄 [Message] Modèle récupéré:', Message ? '✅ OUI' : '❌ NON');
+        
         if (!Message) {
           console.warn('⚠️ Modèle Message non disponible - connexion MongoDB Aurelien non initialisée ou non prête');
           return;
         }
         
+        console.log('🔄 [Message] Création de l\'instance Message...');
         messageDoc = new Message({
           email,
           message,
           send: true, // Email envoyé avec succès
         });
+        console.log('🔄 [Message] Instance créée, sauvegarde en cours...');
         
         // Sauvegarder avec timeout de 8 secondes
         await Promise.race([
           messageDoc.save(),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde message')), 8000))
         ]);
-        console.log(`📝 Message créé en base de données Aurelien (ID: ${messageDoc._id})`);
+        console.log(`✅ [Message] Message créé en base de données Aurelien (ID: ${messageDoc._id})`);
       } catch (dbError) {
-        console.error('❌ Erreur lors de la création du message en BDD Aurelien:', dbError.message);
+        console.error('❌ [Message] Erreur lors de la création du message en BDD Aurelien:', dbError.message);
+        console.error('❌ [Message] Stack:', dbError.stack);
         // Si le message a été créé mais pas sauvegardé, essayer de le mettre à jour avec l'erreur
         if (messageDoc && messageDoc._id) {
           try {
             messageDoc.send = false;
             messageDoc.error = dbError.message;
             await messageDoc.save();
+            console.log('✅ [Message] Message mis à jour avec l\'erreur');
           } catch (updateError) {
-            console.error('❌ Impossible de mettre à jour le message avec l\'erreur:', updateError.message);
+            console.error('❌ [Message] Impossible de mettre à jour le message avec l\'erreur:', updateError.message);
           }
         }
       }
@@ -268,29 +276,36 @@ exports.handleAurelienContact = async (req, res) => {
 
     // ⚡ Créer le message en arrière-plan avec l'erreur (non-bloquant)
     (async () => {
+      console.log('🔄 [Message] Début de la création du message avec erreur en arrière-plan...');
       let messageDoc = null;
       try {
+        console.log('🔄 [Message] Tentative de récupération du modèle...');
         const Message = await getMessageModel();
+        console.log('🔄 [Message] Modèle récupéré:', Message ? '✅ OUI' : '❌ NON');
+        
         if (!Message) {
           console.warn('⚠️ Modèle Message non disponible - impossible de sauvegarder l\'erreur');
           return;
         }
         
+        console.log('🔄 [Message] Création de l\'instance Message avec erreur...');
         messageDoc = new Message({
           email,
           message,
           send: false, // Email non envoyé
           error: errorMessage,
         });
+        console.log('🔄 [Message] Instance créée, sauvegarde en cours...');
         
         // Sauvegarder avec timeout de 8 secondes
         await Promise.race([
           messageDoc.save(),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde message')), 8000))
         ]);
-        console.log(`❌ Message créé en base de données Aurelien avec erreur (ID: ${messageDoc._id})`);
+        console.log(`✅ [Message] Message créé en base de données Aurelien avec erreur (ID: ${messageDoc._id})`);
       } catch (dbError) {
-        console.error('❌ Erreur lors de la création du message en BDD Aurelien:', dbError.message);
+        console.error('❌ [Message] Erreur lors de la création du message en BDD Aurelien:', dbError.message);
+        console.error('❌ [Message] Stack:', dbError.stack);
       }
     })();
   }

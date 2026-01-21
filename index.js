@@ -27,10 +27,17 @@ connectDB();
 connectDBAurelien();
 
 // --- Middlewares globaux ---
+app.set("trust proxy", 1);
+// CORS doit être avant le rate limiter pour gérer les requêtes OPTIONS
 app.use(corsConfig);
 app.options("*", corsConfig);
-app.set("trust proxy", 1);
-app.use(limiter);
+// Rate limiter - exclure les requêtes OPTIONS (preflight)
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return next(); // Skip rate limiter pour OPTIONS
+  }
+  return limiter(req, res, next);
+});
 app.use(bodyParser.json({ limit: "15mb" }));
 app.use(bodyParser.urlencoded({ limit: "15mb", extended: true }));
 

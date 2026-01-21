@@ -13,6 +13,7 @@ const videoController = require("../controllers/VideosController");
 const epController = require("../controllers/EpController");
 const singleController = require("../controllers/singleController");
 const liveController = require("../controllers/LiveController");
+const newSongController = require("../controllers/newSongController");
 const { uploadSingleImages } = require("../middlewares/multerMiddleware");
 const trashController = require("../controllers/trashController");
 const freshNewsController = require("../controllers/freshNewsController");
@@ -125,6 +126,14 @@ router.get("/all-lives", auth, liveController.findAllLivesAdmin); // Backoffice 
 router.get("/lives/:id", liveController.findOneLive);
 router.put("/lives/:id", auth, uploadImage, liveController.updateLive);
 router.delete("/lives/:id", auth, liveController.deleteLive);
+
+// NEW SONG ROUTES
+router.post("/add-new-song", auth, uploadImage, newSongController.addNewSong);
+router.get("/new-songs", newSongController.findAllNewSongs); // Frontend public - uniquement actifs
+router.get("/all-new-songs", auth, newSongController.findAllNewSongsAdmin); // Backoffice - tous les new songs
+router.get("/new-songs/:id", newSongController.findOneNewSong);
+router.put("/new-songs/:id", auth, uploadImage, newSongController.updateNewSong);
+router.delete("/new-songs/:id", auth, newSongController.deleteNewSong);
 
 // TRASH ROUTES
 router.get("/trash", trashController.getAllTrashedItems);

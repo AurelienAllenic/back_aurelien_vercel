@@ -14,6 +14,7 @@ const emailRoutes = require("./routes/emailRoutes");
 const counterRoutes = require("./routes/counterRoutes");
 const authRoutes = require("./routes/authRoutes");
 const paroRoutes = require("./routes/paroRoutes");
+const aurelienRoutes = require("./routes/aurelienRoutes");
 
 // --- Initialisation ---
 const app = express();
@@ -66,6 +67,7 @@ app.get("/", (req, res) => {
 app.use(emailRoutes);
 app.use(counterRoutes);
 app.use(paroRoutes);
+app.use(aurelienRoutes);
 app.use("/auth", authRoutes);
 
 // --- LANCEMENT DU SERVEUR ---

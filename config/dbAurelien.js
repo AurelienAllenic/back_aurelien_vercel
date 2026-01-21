@@ -35,9 +35,9 @@ const connectDBAurelien = async () => {
             }
             
             aurelienConnection = mongoose.createConnection(mongoUri, {
-                serverSelectionTimeoutMS: 20000, // ⚡ 20s pour MongoDB Atlas
-                socketTimeoutMS: 45000,
-                connectTimeoutMS: 20000,
+                serverSelectionTimeoutMS: 8000, // ⚡ 8s max pour éviter les timeouts Vercel
+                socketTimeoutMS: 10000,
+                connectTimeoutMS: 8000,
                 maxPoolSize: 5,
                 minPoolSize: 1,
                 maxIdleTimeMS: 30000,

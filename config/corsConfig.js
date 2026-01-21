@@ -22,28 +22,18 @@ console.log("🌍 [CORS] NODE_ENV :", process.env.NODE_ENV || "undefined");
 
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log("🔍 [CORS] Origine reçue :", origin || "undefined");
-    
-    // En production, REFUSER les requêtes sans origin (sécurité)
+    // Autoriser si origin est undefined (requêtes serveur-à-serveur, Postman)
     if (!origin) {
-      if (process.env.NODE_ENV === "production") {
-        console.log("❌ [CORS] Origine undefined REFUSÉE en production");
-        return callback(new Error("CORS policy: Origin required in production"));
-      }
-      // En développement, autoriser pour les tests (Postman, curl, etc.)
-      console.log("⚠️ [CORS] Origine undefined - autorisée (développement uniquement)");
       return callback(null, true);
     }
 
     if (allowedOrigins.includes(origin)) {
-      console.log("✅ [CORS] Origine autorisée :", origin);
-      callback(null, origin);
+      callback(null, true);
     } else {
-      console.log("❌ [CORS] Origine REFUSÉE :", origin);
       callback(new Error("CORS policy: Origin not allowed"));
     }
   },
-  credentials: true, // ⚡ INDISPENSABLE pour les cookies/sessions
+  credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   exposedHeaders: ["Set-Cookie"],

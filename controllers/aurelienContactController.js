@@ -207,39 +207,31 @@ exports.handleAurelienContact = async (req, res) => {
     await apiInstance.sendTransacEmail(confirmationEmail);
     console.log(`✅ Email confirmation envoyé à ${email}`);
 
-    // ⚡ Créer le message AVANT de répondre (avec timeout court pour éviter timeout Vercel)
-    let messageDoc = null;
-    try {
-      console.log('🔄 [Message] Début de la création du message...');
-      console.log('🔄 [Message] Tentative de récupération du modèle...');
-      const Message = await Promise.race([
-        getMessageModel(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout récupération modèle')), 3000))
-      ]);
-      console.log('🔄 [Message] Modèle récupéré:', Message ? '✅ OUI' : '❌ NON');
-      
-      if (Message) {
-        console.log('🔄 [Message] Création de l\'instance Message...');
-        messageDoc = new Message({
-          email,
-          message,
-          send: true, // Email envoyé avec succès
-        });
-        console.log('🔄 [Message] Instance créée, sauvegarde en cours...');
-        
-        // Sauvegarder avec timeout de 3 secondes max
-        await Promise.race([
-          messageDoc.save(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde message')), 3000))
+    // ⚡ Créer le message en arrière-plan (non-bloquant) - si ça échoue, on continue
+    (async () => {
+      try {
+        const Message = await Promise.race([
+          getMessageModel(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
         ]);
-        console.log(`✅ [Message] Message créé en base de données Aurelien (ID: ${messageDoc._id})`);
-      } else {
-        console.warn('⚠️ Modèle Message non disponible - connexion MongoDB Aurelien non initialisée ou non prête');
+        
+        if (Message) {
+          const messageDoc = new Message({
+            email,
+            message,
+            send: true,
+          });
+          await Promise.race([
+            messageDoc.save(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
+          ]);
+          console.log(`✅ Message créé en BDD (ID: ${messageDoc._id})`);
+        }
+      } catch (error) {
+        // Erreur silencieuse - on ne bloque pas la réponse
+        console.warn('⚠️ Message non sauvegardé en BDD:', error.message);
       }
-    } catch (dbError) {
-      console.error('❌ [Message] Erreur lors de la création du message en BDD Aurelien:', dbError.message);
-      // On continue quand même - l'email est déjà envoyé
-    }
+    })();
 
     // ⚡ Répondre au client (même si le message n'a pas été créé en BDD)
     res.status(200).json({ 
@@ -257,31 +249,32 @@ exports.handleAurelienContact = async (req, res) => {
       errorMessage = JSON.stringify(error.response.body);
     }
     
-    // ⚡ Créer le message avec l'erreur AVANT de répondre (avec timeout court)
-    try {
-      console.log('🔄 [Message] Début de la création du message avec erreur...');
-      const Message = await Promise.race([
-        getMessageModel(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout récupération modèle')), 3000))
-      ]);
-      
-      if (Message) {
-        const messageDoc = new Message({
-          email,
-          message,
-          send: false, // Email non envoyé
-          error: errorMessage,
-        });
-        
-        await Promise.race([
-          messageDoc.save(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde message')), 3000))
+    // ⚡ Créer le message avec l'erreur en arrière-plan (non-bloquant)
+    (async () => {
+      try {
+        const Message = await Promise.race([
+          getMessageModel(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
         ]);
-        console.log(`✅ [Message] Message créé en base de données Aurelien avec erreur (ID: ${messageDoc._id})`);
+        
+        if (Message) {
+          const messageDoc = new Message({
+            email,
+            message,
+            send: false,
+            error: errorMessage,
+          });
+          await Promise.race([
+            messageDoc.save(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
+          ]);
+          console.log(`✅ Message créé en BDD avec erreur`);
+        }
+      } catch (error) {
+        // Erreur silencieuse
+        console.warn('⚠️ Message non sauvegardé en BDD:', error.message);
       }
-    } catch (dbError) {
-      console.error('❌ [Message] Erreur lors de la création du message en BDD Aurelien:', dbError.message);
-    }
+    })();
 
     // ⚡ Répondre au client
     res.status(500).json({ 

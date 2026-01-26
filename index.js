@@ -59,8 +59,9 @@ app.use(
   session({
     name: "paro.sid",
     secret: process.env.SESSION_SECRET || "secret_key",
-    resave: false,
+    resave: true, // Sauvegarder même si non modifiée (nécessaire pour certains cas)
     saveUninitialized: false,
+    rolling: true, // Renouveler le cookie à chaque requête
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_SECRET_KEY,
       collectionName: "sessions",
@@ -72,7 +73,7 @@ app.use(
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 24,
       path: "/",
-      partitioned: process.env.NODE_ENV === "production", // ⚡ Support CHIPS pour Chrome
+      // partitioned: false, // Désactivé car peut causer des problèmes sur iOS
     },
   })
 );
@@ -82,6 +83,20 @@ require("./config/passport"); // ⚙️ stratégie Google pour Paro
 require("./config/passportAurelien"); // ⚙️ stratégie Google pour Aurelien
 app.use(passport.initialize());
 app.use(passport.session());
+
+// --- MIDDLEWARE DE DEBUG POUR AURELIEN ---
+app.use("/auth-aurelien", (req, res, next) => {
+  if (req.path === "/check") {
+    console.log('🍪 [Aurelien Debug] Cookie header:', req.headers.cookie || 'AUCUN');
+    console.log('🍪 [Aurelien Debug] Session ID:', req.sessionID);
+    console.log('🍪 [Aurelien Debug] Session:', {
+      hasSession: !!req.session,
+      aurelienUserId: req.session?.aurelienUserId,
+      site: req.session?.site,
+    });
+  }
+  next();
+});
 
 // --- ROUTES ---
 app.get("/", (req, res) => {

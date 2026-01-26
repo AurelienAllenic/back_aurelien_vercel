@@ -34,13 +34,21 @@ exports.login = async (req, res) => {
     req.session.aurelienUserName = user.name || user.email;
     req.session.site = "aurelien"; // Identifier le site
 
+    console.log('🔐 [Aurelien Login] Session créée:', {
+      aurelienUserId: req.session.aurelienUserId,
+      email: req.session.aurelienUserEmail,
+      site: req.session.site,
+      sessionID: req.sessionID,
+    });
+
     // Sauvegarder la session
     await new Promise((resolve, reject) => {
       req.session.save((err) => {
         if (err) {
-          console.error("Erreur lors de la sauvegarde de la session Aurelien :", err);
+          console.error("❌ Erreur lors de la sauvegarde de la session Aurelien :", err);
           return reject(err);
         }
+        console.log('✅ [Aurelien Login] Session sauvegardée');
         resolve();
       });
     });
@@ -155,7 +163,17 @@ exports.logout = (req, res) => {
 
 // --- VÉRIFICATION DE SESSION ---
 exports.checkSession = (req, res) => {
+  console.log('🔍 [Aurelien Check] Vérification session:', {
+    hasSession: !!req.session,
+    sessionID: req.sessionID,
+    aurelienUserId: req.session?.aurelienUserId,
+    site: req.session?.site,
+    cookies: req.headers.cookie || 'AUCUN COOKIE',
+    origin: req.headers.origin,
+  });
+
   if (req.session && req.session.aurelienUserId && req.session.site === "aurelien") {
+    console.log('✅ [Aurelien Check] Session valide');
     return res.status(200).json({
       isAuthenticated: true,
       user: { 
@@ -165,6 +183,8 @@ exports.checkSession = (req, res) => {
       },
     });
   }
+  
+  console.log('❌ [Aurelien Check] Session invalide ou absente');
   res.status(401).json({ isAuthenticated: false });
 };
 

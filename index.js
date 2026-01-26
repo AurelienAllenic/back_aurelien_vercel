@@ -14,6 +14,7 @@ const limiter = require("./config/rateLimiter");
 const emailRoutes = require("./routes/emailRoutes");
 const counterRoutes = require("./routes/counterRoutes");
 const authRoutes = require("./routes/authRoutes");
+const authAurelienRoutes = require("./routes/authAurelienRoutes");
 const paroRoutes = require("./routes/paroRoutes");
 const aurelienRoutes = require("./routes/aurelienRoutes");
 
@@ -77,7 +78,8 @@ app.use(
 );
 
 // --- INITIALISATION DE PASSPORT ---
-require("./config/passport"); // ⚙️ notre stratégie Google
+require("./config/passport"); // ⚙️ stratégie Google pour Paro
+require("./config/passportAurelien"); // ⚙️ stratégie Google pour Aurelien
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -90,7 +92,8 @@ app.use(emailRoutes);
 app.use(counterRoutes);
 app.use(paroRoutes);
 app.use(aurelienRoutes);
-app.use("/auth", authRoutes);
+app.use("/auth", authRoutes); // Routes auth pour Paro
+app.use("/auth-aurelien", authAurelienRoutes); // Routes auth pour Aurelien
 
 // --- LANCEMENT DU SERVEUR ---
 app.listen(PORT, () => {

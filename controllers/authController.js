@@ -40,9 +40,10 @@ exports.login = async (req, res) => {
         .json({ error: "Paire username/password incorrecte." });
     }
 
-    // ✅ Création d'une session
+    // ✅ Création d'une session pour Paro
     req.session.userId = user._id;
     req.session.username = user.username;
+    req.session.site = "paro"; // Identifier le site
 
     // Sauvegarder la session
     await new Promise((resolve, reject) => {
@@ -68,21 +69,22 @@ exports.login = async (req, res) => {
 
 // --- DÉCONNEXION ---
 exports.logout = (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Erreur lors de la déconnexion :", err);
-      return res
-        .status(500)
-        .json({ message: "Erreur lors de la déconnexion." });
+  // Supprimer uniquement les données Paro de la session
+  // (on garde la session Aurelien si elle existe)
+  if (req.session) {
+    delete req.session.userId;
+    delete req.session.username;
+    // Ne pas supprimer req.session.site si c'est "aurelien"
+    if (req.session.site === "paro" || (!req.session.aurelienUserId && !req.session.site)) {
+      delete req.session.site;
     }
+  }
 
-    // Supprimer le cookie de session
-    res.clearCookie("paro.sid", {
-      path: "/",
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    });
+  req.session.save((err) => {
+    if (err) {
+      console.error("Erreur lors de la déconnexion Paro :", err);
+      return res.status(500).json({ message: "Erreur lors de la déconnexion." });
+    }
 
     res.status(200).json({ message: "Déconnexion réussie." });
   });
@@ -90,7 +92,7 @@ exports.logout = (req, res) => {
 
 // --- VÉRIFICATION DE SESSION (au lieu du token JWT) ---
 exports.checkSession = (req, res) => {
-  if (req.session && req.session.userId) {
+  if (req.session && req.session.userId && req.session.site === "paro") {
     return res.status(200).json({
       isAuthenticated: true,
       user: { id: req.session.userId, username: req.session.username },
@@ -101,7 +103,7 @@ exports.checkSession = (req, res) => {
 
 // --- MIDDLEWARE DE PROTECTION DES ROUTES ---
 exports.requireAuth = (req, res, next) => {
-  if (!req.session.userId) {
+  if (!req.session.userId || req.session.site !== "paro") {
     return res.status(401).json({ message: "Non authentifié." });
   }
   next();

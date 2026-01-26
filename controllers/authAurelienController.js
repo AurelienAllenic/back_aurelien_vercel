@@ -6,24 +6,59 @@ const bcrypt = require("bcryptjs");
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
+  console.log('🔐 [Aurelien Login] Tentative de connexion:', {
+    email: email,
+    emailNormalized: email?.toLowerCase().trim(),
+    hasPassword: !!password,
+  });
+
   try {
     // S'assurer que la connexion est établie
     await connectDBAurelien();
     const UserAurelien = await getUserAurelienModel();
+    
+    const emailNormalized = email.toLowerCase().trim();
     const user = await UserAurelien.findOne({ 
-      email: email.toLowerCase().trim(),
+      email: emailNormalized,
       authMethod: "email"
     });
 
+    console.log('🔍 [Aurelien Login] Recherche utilisateur:', {
+      emailRecherche: emailNormalized,
+      userTrouve: !!user,
+      userId: user?._id,
+      userEmail: user?.email,
+      userAuthMethod: user?.authMethod,
+      hasPassword: !!user?.password,
+    });
+
     if (!user) {
+      // Chercher tous les users avec cet email pour debug
+      const allUsersWithEmail = await UserAurelien.find({ email: emailNormalized });
+      console.log('🔍 [Aurelien Login] Tous les users avec cet email:', {
+        count: allUsersWithEmail.length,
+        users: allUsersWithEmail.map(u => ({
+          id: u._id,
+          email: u.email,
+          authMethod: u.authMethod,
+          hasPassword: !!u.password,
+        })),
+      });
       return res.status(401).json({ error: "Email ou mot de passe incorrect." });
     }
 
     if (!user.password) {
+      console.log('❌ [Aurelien Login] User trouvé mais pas de password');
       return res.status(401).json({ error: "Ce compte utilise la connexion Google." });
     }
 
-    const valid = await bcrypt.compare(password.trim(), user.password);
+    const passwordTrimmed = password.trim();
+    const valid = await bcrypt.compare(passwordTrimmed, user.password);
+    console.log('🔐 [Aurelien Login] Vérification mot de passe:', {
+      valid: valid,
+      passwordLength: passwordTrimmed.length,
+    });
+
     if (!valid) {
       return res.status(401).json({ error: "Email ou mot de passe incorrect." });
     }
@@ -52,6 +87,10 @@ exports.login = async (req, res) => {
         resolve();
       });
     });
+
+    // Vérifier que le cookie est bien envoyé
+    const setCookieHeader = res.getHeader('Set-Cookie');
+    console.log('🍪 [Aurelien Login] Set-Cookie header:', setCookieHeader || 'AUCUN');
 
     res.status(200).json({
       message: "Connexion réussie.",

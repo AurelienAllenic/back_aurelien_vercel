@@ -18,9 +18,9 @@ exports.login = async (req, res) => {
     const UserAurelien = await getUserAurelienModel();
     
     const emailNormalized = email.toLowerCase().trim();
+    // Chercher l'utilisateur par email (peu importe l'authMethod)
     const user = await UserAurelien.findOne({ 
-      email: emailNormalized,
-      authMethod: "email"
+      email: emailNormalized
     });
 
     console.log('🔍 [Aurelien Login] Recherche utilisateur:', {
@@ -33,23 +33,20 @@ exports.login = async (req, res) => {
     });
 
     if (!user) {
-      // Chercher tous les users avec cet email pour debug
-      const allUsersWithEmail = await UserAurelien.find({ email: emailNormalized });
-      console.log('🔍 [Aurelien Login] Tous les users avec cet email:', {
-        count: allUsersWithEmail.length,
-        users: allUsersWithEmail.map(u => ({
-          id: u._id,
-          email: u.email,
-          authMethod: u.authMethod,
-          hasPassword: !!u.password,
-        })),
-      });
       return res.status(401).json({ error: "Email ou mot de passe incorrect." });
     }
 
+    // Si l'utilisateur existe mais n'a pas de mot de passe, c'est un compte Google uniquement
     if (!user.password) {
       console.log('❌ [Aurelien Login] User trouvé mais pas de password');
       return res.status(401).json({ error: "Ce compte utilise la connexion Google." });
+    }
+
+    // Si l'utilisateur a authMethod: "google" mais aussi un password, on peut le mettre à jour
+    if (user.authMethod === "google" && user.password) {
+      console.log('🔄 [Aurelien Login] Mise à jour authMethod de "google" à "email"');
+      user.authMethod = "email";
+      await user.save();
     }
 
     const passwordTrimmed = password.trim();

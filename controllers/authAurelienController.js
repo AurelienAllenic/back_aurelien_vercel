@@ -215,10 +215,29 @@ exports.googleCallback = async (req, res) => {
     const setCookieHeader = res.getHeader('Set-Cookie');
     console.log('🍪 [Aurelien Google OAuth] Set-Cookie header:', setCookieHeader || 'AUCUN');
 
-    // Rediriger vers le frontend Aurelien
+    // Utiliser une page HTML intermédiaire pour s'assurer que le cookie est envoyé
+    // avant la redirection côté client
     const frontendUrl = process.env.AURELIEN_FRONTEND_URL || 'http://localhost:5173';
-    console.log('🔄 [Aurelien Google OAuth] Redirection vers:', `${frontendUrl}/dashboard?success=logged_in`);
-    res.redirect(`${frontendUrl}/dashboard?success=logged_in`);
+    const redirectUrl = `${frontendUrl}/dashboard?success=logged_in`;
+    console.log('🔄 [Aurelien Google OAuth] Redirection vers:', redirectUrl);
+    
+    // Envoyer une page HTML qui redirige côté client après un court délai
+    // Cela permet au cookie d'être envoyé avant la redirection
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta http-equiv="refresh" content="0;url=${redirectUrl}">
+          <script>
+            window.location.href = "${redirectUrl}";
+          </script>
+        </head>
+        <body>
+          <p>Redirection en cours...</p>
+          <p>Si vous n'êtes pas redirigé, <a href="${redirectUrl}">cliquez ici</a>.</p>
+        </body>
+      </html>
+    `);
   } catch (error) {
     console.error("❌ [Aurelien Google OAuth] Erreur lors du callback Google Aurelien :", error);
     const frontendUrl = process.env.AURELIEN_FRONTEND_URL || 'http://localhost:5173';

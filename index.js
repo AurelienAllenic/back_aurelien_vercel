@@ -59,9 +59,9 @@ app.use(
   session({
     name: "paro.sid",
     secret: process.env.SESSION_SECRET || "secret_key",
-    resave: true, // Sauvegarder même si non modifiée (nécessaire pour certains cas)
+    resave: true,
     saveUninitialized: false,
-    rolling: true, // Renouveler le cookie à chaque requête
+    rolling: true,
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_SECRET_KEY,
       collectionName: "sessions",
@@ -73,7 +73,6 @@ app.use(
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 24,
       path: "/",
-      // partitioned: false, // Désactivé car peut causer des problèmes sur iOS
     },
   })
 );

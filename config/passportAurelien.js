@@ -5,6 +5,7 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const getCallbackURL = () => {
   // Si une URL complète est fournie, l'utiliser
   if (process.env.GOOGLE_CALLBACK_URL_AURELIEN) {
+    console.log('🔵 [Passport Aurelien] Callback URL depuis env:', process.env.GOOGLE_CALLBACK_URL_AURELIEN);
     return process.env.GOOGLE_CALLBACK_URL_AURELIEN;
   }
   
@@ -14,7 +15,12 @@ const getCallbackURL = () => {
     ? (process.env.BACKEND_URL || "https://back-aurelien-vercel.vercel.app")
     : `http://localhost:${process.env.PORT || 3000}`;
   
-  return `${backendUrl}/auth-aurelien/google/callback`;
+  const callbackURL = `${backendUrl}/auth-aurelien/google/callback`;
+  console.log('🔵 [Passport Aurelien] Callback URL construite:', callbackURL);
+  console.log('🔵 [Passport Aurelien] NODE_ENV:', process.env.NODE_ENV);
+  console.log('🔵 [Passport Aurelien] BACKEND_URL:', process.env.BACKEND_URL);
+  
+  return callbackURL;
 };
 
 // Configuration Passport spécifique pour Aurelien

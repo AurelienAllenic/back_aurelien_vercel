@@ -9,7 +9,7 @@ exports.login = async (req, res) => {
   try {
     // S'assurer que la connexion est établie
     await connectDBAurelien();
-    const UserAurelien = getUserAurelienModel();
+    const UserAurelien = await getUserAurelienModel();
     const user = await UserAurelien.findOne({ 
       email: email.toLowerCase().trim(),
       authMethod: "email"
@@ -71,7 +71,7 @@ exports.googleCallback = async (req, res) => {
 
     // S'assurer que la connexion est établie
     await connectDBAurelien();
-    const UserAurelien = getUserAurelienModel();
+    const UserAurelien = await getUserAurelienModel();
 
     const email = profile.emails[0].value.toLowerCase().trim();
     const googleId = profile.id;
@@ -184,7 +184,7 @@ exports.requireAdmin = async (req, res, next) => {
     }
 
     await connectDBAurelien();
-    const UserAurelien = getUserAurelienModel();
+    const UserAurelien = await getUserAurelienModel();
     const user = await UserAurelien.findById(req.session.aurelienUserId);
 
     if (!user || user.role !== "admin") {
@@ -217,7 +217,7 @@ exports.createUser = async (req, res) => {
     }
 
     await connectDBAurelien();
-    const UserAurelien = getUserAurelienModel();
+    const UserAurelien = await getUserAurelienModel();
 
     // Vérifier si l'utilisateur existe déjà
     const existingUser = await UserAurelien.findOne({ 

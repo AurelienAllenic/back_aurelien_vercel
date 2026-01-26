@@ -6,7 +6,7 @@ const getUserAurelienModel = require("../models/UserAurelien");
   try {
     // Connexion à MongoDB Aurelien
     await connectDBAurelien();
-    const UserAurelien = getUserAurelienModel();
+    const UserAurelien = await getUserAurelienModel();
 
     // Vérifier si un admin existe déjà
     const adminExists = await UserAurelien.findOne({ role: "admin" });

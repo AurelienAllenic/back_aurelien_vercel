@@ -54,36 +54,7 @@ app.use((req, res, next) => {
 app.use(bodyParser.json({ limit: "15mb" }));
 app.use(bodyParser.urlencoded({ limit: "15mb", extended: true }));
 
-// --- CONFIGURATION DES SESSIONS ---
-app.use(
-  session({
-    name: "paro.sid",
-    secret: process.env.SESSION_SECRET || "secret_key",
-    resave: true,
-    saveUninitialized: false,
-    rolling: true,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGO_SECRET_KEY,
-      collectionName: "sessions",
-    }),
-    proxy: true,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 1000 * 60 * 60 * 24,
-      path: "/",
-    },
-  })
-);
-
-// --- INITIALISATION DE PASSPORT ---
-require("./config/passport"); // ⚙️ stratégie Google pour Paro
-require("./config/passportAurelien"); // ⚙️ stratégie Google pour Aurelien
-app.use(passport.initialize());
-app.use(passport.session());
-
-// --- SOUS-APP POUR AURELIEN AVEC SESSION SÉPARÉE ---
+// --- SOUS-APP POUR AURELIEN AVEC SESSION SÉPARÉE (MONTÉ AVANT LA SESSION PARO) ---
 // Cela permet d'avoir un cookie séparé (aurelien.sid) pour Aurelien
 // sans toucher à la configuration Paro
 const aurelienApp = express();
@@ -119,12 +90,13 @@ aurelienApp.use(
 );
 
 // Passport pour Aurelien
+require("./config/passportAurelien"); // ⚙️ stratégie Google pour Aurelien
 aurelienApp.use(passport.initialize());
 aurelienApp.use(passport.session());
 
 // Middleware de debug pour Aurelien
 aurelienApp.use((req, res, next) => {
-  if (req.path === "/check") {
+  if (req.path === "/check" || req.path === "/google/callback") {
     console.log('🍪 [Aurelien Debug] Cookie header:', req.headers.cookie || 'AUCUN');
     console.log('🍪 [Aurelien Debug] Session ID:', req.sessionID);
     console.log('🍪 [Aurelien Debug] Session:', {
@@ -140,8 +112,45 @@ aurelienApp.use((req, res, next) => {
 aurelienApp.use("/auth-aurelien", authAurelienRoutes);
 aurelienApp.use("/aurelien-contact", aurelienRoutes);
 
-// Monter le sous-app sur le app principal
+// Monter le sous-app sur le app principal AVANT la session Paro
 app.use(aurelienApp);
+
+// --- CONFIGURATION DES SESSIONS PARO (après le sous-app Aurelien) ---
+// Créer le middleware de session Paro
+const paroSession = session({
+  name: "paro.sid",
+  secret: process.env.SESSION_SECRET || "secret_key",
+  resave: true,
+  saveUninitialized: false,
+  rolling: true,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_SECRET_KEY,
+    collectionName: "sessions",
+  }),
+  proxy: true,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 1000 * 60 * 60 * 24,
+    path: "/",
+  },
+});
+
+// Appliquer la session Paro uniquement aux routes qui ne sont pas Aurelien
+app.use((req, res, next) => {
+  // Si c'est une route Aurelien, passer au suivant sans créer de session Paro
+  if (req.path.startsWith('/auth-aurelien') || req.path.startsWith('/aurelien-contact')) {
+    return next();
+  }
+  // Sinon, appliquer la session Paro
+  return paroSession(req, res, next);
+});
+
+// --- INITIALISATION DE PASSPORT PARO ---
+require("./config/passport"); // ⚙️ stratégie Google pour Paro
+app.use(passport.initialize());
+app.use(passport.session());
 
 // --- ROUTES PARO (non touchées) ---
 app.get("/", (req, res) => {

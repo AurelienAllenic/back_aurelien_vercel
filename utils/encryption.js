@@ -7,6 +7,14 @@ const IV_LENGTH = 16; // Longueur du vecteur d'initialisation
 const SALT_LENGTH = 64; // Longueur du sel
 const TAG_LENGTH = 16; // Longueur du tag d'authentification
 
+// Log au démarrage pour vérifier la clé
+if (!process.env.MESSAGE_ENCRYPTION_KEY) {
+  console.warn('⚠️ [Encryption] MESSAGE_ENCRYPTION_KEY non défini ! Une clé aléatoire est utilisée.');
+  console.warn('⚠️ [Encryption] Les messages chiffrés ne pourront pas être déchiffrés après redémarrage.');
+} else {
+  console.log('✅ [Encryption] MESSAGE_ENCRYPTION_KEY défini');
+}
+
 /**
  * Chiffre un texte avec AES-256-GCM
  * @param {string} text - Texte à chiffrer
@@ -63,6 +71,19 @@ function decrypt(encryptedText) {
     // Décoder le base64
     const combined = Buffer.from(encryptedText, 'base64');
     
+    // Vérifier que la taille est suffisante
+    const minSize = SALT_LENGTH + IV_LENGTH + TAG_LENGTH;
+    if (combined.length < minSize) {
+      console.warn('⚠️ [Decrypt] Texte trop court pour être déchiffré (taille:', combined.length, 'min:', minSize, ')');
+      return encryptedText; // Probablement un ancien message non chiffré
+    }
+    
+    // Vérifier que ENCRYPTION_KEY est défini
+    if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length < 32) {
+      console.error('❌ [Decrypt] MESSAGE_ENCRYPTION_KEY non défini ou trop court');
+      return encryptedText;
+    }
+    
     // Extraire les composants
     const salt = combined.slice(0, SALT_LENGTH);
     const iv = combined.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
@@ -82,7 +103,8 @@ function decrypt(encryptedText) {
     
     return decrypted;
   } catch (error) {
-    console.error('❌ Erreur lors du déchiffrement:', error);
+    console.error('❌ Erreur lors du déchiffrement:', error.message);
+    console.error('❌ [Decrypt] Texte chiffré (premiers 100 caractères):', encryptedText.substring(0, 100));
     // Si le déchiffrement échoue, retourner le texte original (pour compatibilité avec anciens messages)
     return encryptedText;
   }

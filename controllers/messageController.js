@@ -8,12 +8,41 @@ exports.findAllMessages = async (req, res) => {
     const Message = await getMessageModel();
     const messages = await Message.find().sort({ createdAt: -1 });
     
+    console.log(`📨 [Messages] Récupération de ${messages.length} message(s)`);
+    
     // Déchiffrer les messages pour l'affichage
-    const decryptedMessages = messages.map(msg => ({
-      ...msg.toObject(),
-      email: decrypt(msg.email),
-      message: decrypt(msg.message),
-    }));
+    const decryptedMessages = messages.map((msg, index) => {
+      try {
+        const originalEmail = msg.email;
+        const originalMessage = msg.message;
+        
+        const decryptedEmail = decrypt(msg.email);
+        const decryptedMessage = decrypt(msg.message);
+        
+        // Vérifier si le déchiffrement a réussi
+        if (decryptedEmail === originalEmail) {
+          console.warn(`⚠️ [Messages] Email non déchiffré pour message ${index + 1} (ID: ${msg._id})`);
+        }
+        if (decryptedMessage === originalMessage) {
+          console.warn(`⚠️ [Messages] Message non déchiffré pour message ${index + 1} (ID: ${msg._id})`);
+        } else {
+          console.log(`✅ [Messages] Message ${index + 1} déchiffré avec succès`);
+        }
+        
+        return {
+          ...msg.toObject(),
+          email: decryptedEmail,
+          message: decryptedMessage,
+        };
+      } catch (decryptError) {
+        console.error(`❌ [Messages] Erreur déchiffrement message ${index + 1} (ID: ${msg._id}):`, decryptError);
+        return {
+          ...msg.toObject(),
+          email: msg.email,
+          message: msg.message,
+        };
+      }
+    });
     
     res.status(200).json({ message: "Liste des messages", data: decryptedMessages });
   } catch (error) {

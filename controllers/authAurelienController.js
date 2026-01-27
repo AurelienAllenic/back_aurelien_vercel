@@ -211,32 +211,16 @@ exports.googleCallback = async (req, res) => {
       });
     });
 
-    // Utiliser une page HTML intermédiaire pour s'assurer que le cookie est envoyé
-    // avant la redirection côté client (nécessaire pour les redirections cross-domain OAuth)
+    // Attendre que la session soit bien persistée dans MongoDB
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Rediriger directement avec res.redirect() qui envoie automatiquement le cookie
     const frontendUrl = process.env.AURELIEN_FRONTEND_URL || 'http://localhost:5173';
     const redirectUrl = `${frontendUrl}/dashboard?success=logged_in`;
     console.log('🔄 [Aurelien Google OAuth] Redirection vers:', redirectUrl);
+    console.log('🍪 [Aurelien Google OAuth] Session ID à envoyer:', req.sessionID);
     
-    // Envoyer une page HTML qui redirige côté client
-    // Cela permet au cookie d'être envoyé et stocké par le navigateur avant la redirection
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Redirection...</title>
-          <meta http-equiv="refresh" content="0;url=${redirectUrl}">
-          <script>
-            // Redirection immédiate côté client pour que le cookie soit envoyé
-            window.location.href = "${redirectUrl}";
-          </script>
-        </head>
-        <body>
-          <p>Redirection en cours...</p>
-          <p>Si vous n'êtes pas redirigé automatiquement, <a href="${redirectUrl}">cliquez ici</a>.</p>
-        </body>
-      </html>
-    `);
+    res.redirect(redirectUrl);
   } catch (error) {
     console.error("❌ [Aurelien Google OAuth] Erreur lors du callback Google Aurelien :", error);
     const frontendUrl = process.env.AURELIEN_FRONTEND_URL || 'http://localhost:5173';

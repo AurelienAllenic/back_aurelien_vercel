@@ -275,7 +275,7 @@ exports.checkSession = (req, res) => {
   }
   
   console.log('❌ [Aurelien Check] Session invalide ou absente');
-  res.status(401).json({ isAuthenticated: false });
+  res.status(200).json({ isAuthenticated: false });
 };
 
 // --- MIDDLEWARE DE PROTECTION DES ROUTES ---

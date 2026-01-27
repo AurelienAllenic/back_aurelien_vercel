@@ -83,8 +83,47 @@ require("./config/passportAurelien"); // ⚙️ stratégie Google pour Aurelien
 app.use(passport.initialize());
 app.use(passport.session());
 
-// --- MIDDLEWARE DE DEBUG POUR AURELIEN ---
-app.use("/auth-aurelien", (req, res, next) => {
+// --- SOUS-APP POUR AURELIEN AVEC SESSION SÉPARÉE ---
+// Cela permet d'avoir un cookie séparé (aurelien.sid) pour Aurelien
+// sans toucher à la configuration Paro
+const aurelienApp = express();
+
+// Appliquer les middlewares nécessaires au sous-app
+aurelienApp.set("trust proxy", 1);
+aurelienApp.use(corsConfig);
+aurelienApp.options("*", corsConfig);
+aurelienApp.use(bodyParser.json({ limit: "15mb" }));
+aurelienApp.use(bodyParser.urlencoded({ limit: "15mb", extended: true }));
+
+// Configuration de session séparée pour Aurelien avec cookie différent
+aurelienApp.use(
+  session({
+    name: "aurelien.sid", // Cookie séparé pour Aurelien
+    secret: process.env.SESSION_SECRET || "secret_key",
+    resave: true,
+    saveUninitialized: false,
+    rolling: true,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_SECRET_KEY,
+      collectionName: "sessions_aurelien", // Collection séparée
+    }),
+    proxy: true,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 1000 * 60 * 60 * 24,
+      path: "/",
+    },
+  })
+);
+
+// Passport pour Aurelien
+aurelienApp.use(passport.initialize());
+aurelienApp.use(passport.session());
+
+// Middleware de debug pour Aurelien
+aurelienApp.use((req, res, next) => {
   if (req.path === "/check") {
     console.log('🍪 [Aurelien Debug] Cookie header:', req.headers.cookie || 'AUCUN');
     console.log('🍪 [Aurelien Debug] Session ID:', req.sessionID);
@@ -97,7 +136,14 @@ app.use("/auth-aurelien", (req, res, next) => {
   next();
 });
 
-// --- ROUTES ---
+// Routes Aurelien sur le sous-app
+aurelienApp.use("/auth-aurelien", authAurelienRoutes);
+aurelienApp.use("/aurelien-contact", aurelienRoutes);
+
+// Monter le sous-app sur le app principal
+app.use(aurelienApp);
+
+// --- ROUTES PARO (non touchées) ---
 app.get("/", (req, res) => {
   res.status(200).json("Welcome to the main route");
 });
@@ -105,9 +151,7 @@ app.get("/", (req, res) => {
 app.use(emailRoutes);
 app.use(counterRoutes);
 app.use(paroRoutes);
-app.use(aurelienRoutes);
 app.use("/auth", authRoutes); // Routes auth pour Paro
-app.use("/auth-aurelien", authAurelienRoutes); // Routes auth pour Aurelien
 
 // --- LANCEMENT DU SERVEUR ---
 app.listen(PORT, () => {

@@ -110,7 +110,7 @@ aurelienApp.use((req, res, next) => {
 
 // Routes Aurelien sur le sous-app
 aurelienApp.use("/auth-aurelien", authAurelienRoutes);
-aurelienApp.use("/aurelien-contact", aurelienRoutes);
+aurelienApp.use("/", aurelienRoutes); // Les routes dans aurelienRoutes.js ont déjà le préfixe /aurelien-contact
 
 // Monter le sous-app sur le app principal AVANT la session Paro
 app.use(aurelienApp);

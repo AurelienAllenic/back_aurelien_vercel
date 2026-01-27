@@ -64,6 +64,7 @@ exports.login = async (req, res) => {
     req.session.aurelienUserId = user._id;
     req.session.aurelienUserEmail = user.email;
     req.session.aurelienUserName = user.name || user.email;
+    req.session.aurelienUserPicture = user.picture;
     req.session.site = "aurelien"; // Identifier le site
 
     console.log('🔐 [Aurelien Login] Session créée:', {
@@ -190,6 +191,7 @@ exports.googleCallback = async (req, res) => {
     req.session.aurelienUserId = user._id;
     req.session.aurelienUserEmail = user.email;
     req.session.aurelienUserName = user.name || user.email;
+    req.session.aurelienUserPicture = user.picture;
     req.session.site = "aurelien";
 
     console.log('🔐 [Aurelien Google OAuth] Session créée:', {
@@ -236,6 +238,7 @@ exports.logout = (req, res) => {
     delete req.session.aurelienUserId;
     delete req.session.aurelienUserEmail;
     delete req.session.aurelienUserName;
+    delete req.session.aurelienUserPicture; 
     if (req.session.site === "aurelien") {
       delete req.session.site;
     }
@@ -269,7 +272,8 @@ exports.checkSession = (req, res) => {
       user: { 
         id: req.session.aurelienUserId, 
         email: req.session.aurelienUserEmail,
-        name: req.session.aurelienUserName
+        name: req.session.aurelienUserName,
+        picture: req.session.aurelienUserPicture
       },
     });
   }

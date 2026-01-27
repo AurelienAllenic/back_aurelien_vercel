@@ -1,12 +1,21 @@
 const getMessageModel = require("../models/Message");
 const mongoose = require("mongoose");
+const { decrypt } = require("../utils/encryption");
 
 // Récupérer tous les messages
 exports.findAllMessages = async (req, res) => {
   try {
-    const Message = getMessageModel();
+    const Message = await getMessageModel();
     const messages = await Message.find().sort({ createdAt: -1 });
-    res.status(200).json({ message: "Liste des messages", data: messages });
+    
+    // Déchiffrer les messages pour l'affichage
+    const decryptedMessages = messages.map(msg => ({
+      ...msg.toObject(),
+      email: decrypt(msg.email),
+      message: decrypt(msg.message),
+    }));
+    
+    res.status(200).json({ message: "Liste des messages", data: decryptedMessages });
   } catch (error) {
     console.error("❌ Erreur lors de la récupération des messages :", error);
     res.status(400).json({
@@ -25,13 +34,20 @@ exports.findOneMessage = async (req, res) => {
   }
 
   try {
-    const Message = getMessageModel();
+    const Message = await getMessageModel();
     const message = await Message.findById(id);
     if (!message) {
       return res.status(404).json({ message: "Message non trouvé." });
     }
 
-    res.status(200).json({ message: "Message trouvé", data: message });
+    // Déchiffrer le message pour l'affichage
+    const decryptedMessage = {
+      ...message.toObject(),
+      email: decrypt(message.email),
+      message: decrypt(message.message),
+    };
+
+    res.status(200).json({ message: "Message trouvé", data: decryptedMessage });
   } catch (error) {
     console.error("❌ Erreur lors de la récupération du message :", error);
     res.status(400).json({
@@ -50,7 +66,7 @@ exports.deleteMessage = async (req, res) => {
   }
 
   try {
-    const Message = getMessageModel();
+    const Message = await getMessageModel();
     const message = await Message.findById(id);
     if (!message) {
       return res.status(404).json({ message: "Message non trouvé." });

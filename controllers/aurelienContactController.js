@@ -1,5 +1,6 @@
 const brevo = require('@getbrevo/brevo');
 const getMessageModel = require('../models/Message');
+const { encrypt } = require('../utils/encryption');
 
 // Initialiser l'API Brevo pour Aurelien (compte différent)
 const apiInstance = new brevo.TransactionalEmailsApi();
@@ -219,16 +220,20 @@ exports.handleAurelienContact = async (req, res) => {
         ]);
         
         if (Message) {
+          // Chiffrer l'email et le message avant sauvegarde
+          const encryptedEmail = encrypt(email);
+          const encryptedMessage = encrypt(message);
+          
           const messageDoc = new Message({
-            email,
-            message,
+            email: encryptedEmail,
+            message: encryptedMessage,
             send: true, // Email envoyé avec succès
           });
           await Promise.race([
             messageDoc.save(),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde')), 3000))
           ]);
-          console.log(`✅ [Message] Message créé en BDD (ID: ${messageDoc._id})`);
+          console.log(`✅ [Message] Message chiffré créé en BDD (ID: ${messageDoc._id})`);
         }
       } catch (error) {
         console.error('❌ [Message] Erreur création message:', error.message);
@@ -260,17 +265,21 @@ exports.handleAurelienContact = async (req, res) => {
         ]);
         
         if (Message) {
+          // Chiffrer l'email et le message avant sauvegarde
+          const encryptedEmail = encrypt(email);
+          const encryptedMessage = encrypt(message);
+          
           const messageDoc = new Message({
-            email,
-            message,
+            email: encryptedEmail,
+            message: encryptedMessage,
             send: false, // Email non envoyé
-            error: errorMessage,
+            error: errorMessage, // L'erreur n'a pas besoin d'être chiffrée
           });
           await Promise.race([
             messageDoc.save(),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde')), 3000))
           ]);
-          console.log(`❌ [Message] Message créé en BDD avec erreur (ID: ${messageDoc._id})`);
+          console.log(`❌ [Message] Message chiffré créé en BDD avec erreur (ID: ${messageDoc._id})`);
         }
       } catch (dbError) {
         console.error('❌ [Message] Erreur création message:', dbError.message);

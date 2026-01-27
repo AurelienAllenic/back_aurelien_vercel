@@ -22,6 +22,7 @@ const paroContactController = require("../controllers/paroContactController");
 const linktreeBlockController = require("../controllers/linktreeBlockController");
 const linktreeProfileController = require("../controllers/linktreeProfileController");
 const messageController = require("../controllers/messageController");
+const { requireAuth } = require("../controllers/authAurelienController");
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);
@@ -157,10 +158,10 @@ router.post("/fresh-news", freshNewsController.upsertFreshNews);
 // PARO CONTACT ROUTE
 router.post("/paro-contact", paroContactController.handleParoContact);
 
-// MESSAGE ROUTES (aurelienallenic.fr)
-router.get("/messages", auth, messageController.findAllMessages);
-router.get("/messages/:id", auth, messageController.findOneMessage);
-router.delete("/messages/:id", auth, messageController.deleteMessage);
+// MESSAGE ROUTES (aurelienallenic.fr) - Protégées par authentification Aurelien
+router.get("/messages", requireAuth, messageController.findAllMessages);
+router.get("/messages/:id", requireAuth, messageController.findOneMessage);
+router.delete("/messages/:id", requireAuth, messageController.deleteMessage);
 
 // ========== LINKTREE BLOCKS ==========
 // Routes publiques (pas d'auth)

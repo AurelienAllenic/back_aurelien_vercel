@@ -11,8 +11,9 @@ const TAG_LENGTH = 16; // Longueur du tag d'authentification
 if (!process.env.MESSAGE_ENCRYPTION_KEY) {
   console.warn('⚠️ [Encryption] MESSAGE_ENCRYPTION_KEY non défini ! Une clé aléatoire est utilisée.');
   console.warn('⚠️ [Encryption] Les messages chiffrés ne pourront pas être déchiffrés après redémarrage.');
+  console.warn('⚠️ [Encryption] Clé aléatoire générée (premiers 20 caractères):', ENCRYPTION_KEY.substring(0, 20));
 } else {
-  console.log('✅ [Encryption] MESSAGE_ENCRYPTION_KEY défini');
+  const keyPreview = process.env.MESSAGE_ENCRYPTION_KEY.substring(0, 10) + '...' + process.env.MESSAGE_ENCRYPTION_KEY.substring(process.env.MESSAGE_ENCRYPTION_KEY.length - 10);
 }
 
 /**

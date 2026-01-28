@@ -27,8 +27,8 @@ exports.upsertCv = async (req, res) => {
     const existing = await CvAurelien.findOne().lean();
 
     const payload = {
-      imagePngFr: pickUrl(files.imagePngFr) || existing?.imagePngFr || "",
-      imagePngEn: pickUrl(files.imagePngEn) || existing?.imagePngEn || "",
+      imageWebpFr: pickUrl(files.imageWebpFr) || existing?.imageWebpFr || "",
+      imageWebpEn: pickUrl(files.imageWebpEn) || existing?.imageWebpEn || "",
       pdfFr: pickUrl(files.pdfFr) || existing?.pdfFr || "",
       pdfEn: pickUrl(files.pdfEn) || existing?.pdfEn || "",
     };

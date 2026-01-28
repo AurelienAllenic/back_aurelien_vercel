@@ -3,8 +3,8 @@ const { getAurelienConnection } = require("../config/dbAurelien");
 
 const CvAurelienSchema = new mongoose.Schema(
   {
-    imagePngFr: { type: String, default: "" },
-    imagePngEn: { type: String, default: "" },
+    imageWebpFr: { type: String, default: "" },
+    imageWebpEn: { type: String, default: "" },
     pdfFr: { type: String, default: "" },
     pdfEn: { type: String, default: "" },
   },

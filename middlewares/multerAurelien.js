@@ -18,7 +18,7 @@ const cvStorage = new CloudinaryStorage({
       file.mimetype === "application/pdf" ? "raw" : "image",
     format: (req, file) => {
       if (file.mimetype === "application/pdf") return "pdf";
-      return file.mimetype.split("/")[1] || "png";
+      return file.mimetype.split("/")[1] || "webp";
     },
     public_id: (req, file) => {
       const name = file.fieldname || "file";
@@ -31,10 +31,10 @@ const cvUpload = multer({
   storage: cvStorage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ["image/png", "application/pdf"];
+    const allowed = ["image/webp", "application/pdf"];
     if (!allowed.includes(file.mimetype)) {
       return cb(
-        new Error("Seuls les formats PNG et PDF sont autorisés pour le CV."),
+        new Error("Seuls les formats WebP et PDF sont autorisés pour le CV."),
         false
       );
     }
@@ -45,8 +45,8 @@ const cvUpload = multer({
 exports.uploadCvFields = (req, res, next) => {
   cvUpload.fields(
     [
-      { name: "imagePngFr", maxCount: 1 },
-      { name: "imagePngEn", maxCount: 1 },
+      { name: "imageWebpFr", maxCount: 1 },
+      { name: "imageWebpEn", maxCount: 1 },
       { name: "pdfFr", maxCount: 1 },
       { name: "pdfEn", maxCount: 1 },
     ]

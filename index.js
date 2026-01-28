@@ -140,7 +140,7 @@ const paroSession = session({
 // Appliquer la session Paro uniquement aux routes qui ne sont pas Aurelien
 app.use((req, res, next) => {
   // Si c'est une route Aurelien, passer au suivant sans créer de session Paro
-  if (req.path.startsWith('/auth-aurelien') || req.path.startsWith('/aurelien-contact')) {
+  if (req.path.startsWith('/auth-aurelien') || req.path.startsWith('/aurelien-contact') || req.path.startsWith('/cv')) {
     return next();
   }
   // Sinon, appliquer la session Paro

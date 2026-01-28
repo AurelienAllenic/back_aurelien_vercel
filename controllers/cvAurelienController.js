@@ -23,12 +23,10 @@ exports.upsertCv = async (req, res) => {
     await connectDBAurelien();
     const CvAurelien = await getCvAurelienModel();
     const files = req.files || {};
-    const link = typeof req.body.link === "string" ? req.body.link.trim() : undefined;
 
     const existing = await CvAurelien.findOne().lean();
 
     const payload = {
-      link: link !== undefined ? link : (existing?.link ?? ""),
       imagePngFr: pickUrl(files.imagePngFr) || existing?.imagePngFr || "",
       imagePngEn: pickUrl(files.imagePngEn) || existing?.imagePngEn || "",
       pdfFr: pickUrl(files.pdfFr) || existing?.pdfFr || "",

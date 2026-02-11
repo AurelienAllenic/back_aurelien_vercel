@@ -1,7 +1,7 @@
 module.exports = (req, res, next) => {
   try {
     // Vérifie si l'utilisateur est connecté pour Paro
-    if (req.session && req.session.userId && req.session.site === "paro") {
+    if (req.session && req.session.userId) {
       // On peut mettre l'info utilisateur dans req.auth pour rester cohérent
       req.auth = {
         userId: req.session.userId,

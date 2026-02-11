@@ -5,8 +5,6 @@ const allowedOrigins = [
   "https://www.paro-musique.com",
   "https://paro-officiel.com",
   "https://www.paro-officiel.com",
-  "https://aurelienallenic.fr",
-  "https://www.aurelienallenic.fr",
 ];
 
 // En développement, ajouter localhost

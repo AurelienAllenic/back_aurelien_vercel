@@ -36,6 +36,7 @@ router.get("/smart-links", smartLinkController.findAllSmartLinks);
 router.get("/smart-links/:id", smartLinkController.findOneSmartLink);
 router.put("/smart-links/:id", auth, smartLinkController.updateSmartLink);
 router.delete("/smart-links/:id", auth, smartLinkController.deleteSmartLink);
+router.put("/order-smartlinks", auth, smartLinkController.updateOrder);
 
 // SMART LINK V2 ROUTES
 
@@ -48,6 +49,8 @@ router.delete(
   auth,
   smartLinkV2Controller.deleteSmartLink
 );
+router.put("/order-smartlinks-v2", auth, smartLinkV2Controller.updateOrder);
+router.put("/move-smartlink", auth, smartLinkV2Controller.moveSmartLink);
 
 // SOCIAL LINKS
 
@@ -65,8 +68,8 @@ router.post("/add-press", auth, uploadImage, pressController.createPress);
 router.get("/press/:id", auth, pressController.getPress);
 router.put("/press/:id", auth, uploadImage, pressController.updatePress);
 router.delete("/press/:id", auth, pressController.deletePress);
-router.get("/all-press", pressController.findAllPress);
-router.put("/order-press", pressController.updateOrder);
+router.get("/all-press", auth, pressController.findAllPress);
+router.put("/order-press", auth, pressController.updateOrder);
 
 // FOLDERS ROUTES
 
@@ -87,8 +90,8 @@ router.delete(
   auth,
   smartLinkFolderController.deleteFolder
 );
-router.put("/order-folders", smartLinkFolderController.updateOrder);
-router.put("/move-folder", smartLinkFolderController.moveFolder);
+router.put("/order-folders", auth, smartLinkFolderController.updateOrder);
+router.put("/move-folder", auth, smartLinkFolderController.moveFolder);
 
 // VIDEO ROUTES
 router.post("/add-video", auth, uploadImage, videoController.addVideo);

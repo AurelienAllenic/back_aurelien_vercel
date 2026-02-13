@@ -6,7 +6,8 @@ const SmartLinkSchema = new mongoose.Schema({
     titleType: { type: String, required: true },
     modifiedTitle: { type: String, required: true, unique: true },
     link: { type: String, required: true, unique: true },
-    isActive: {type: Boolean,default: true,},
+    isActive: { type: Boolean, default: true },
+    order: { type: Number, default: 0 },
 });
 
 module.exports = mongoose.model('SmartLink', SmartLinkSchema);

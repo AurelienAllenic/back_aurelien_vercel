@@ -5,7 +5,7 @@ const { v4: uuidv4 } = require("uuid");
 const Folder = require("../models/Folder");
 const Trash = require("../models/Trash");
 
-// Ajouter un lien
+// ✅ Ajouter un lien avec ordre automatique
 exports.addSmartLink = async (req, res) => {
   const { title, linkType, titleType, modifiedTitle, link, folder } = req.body;
 
@@ -16,6 +16,14 @@ exports.addSmartLink = async (req, res) => {
   }
 
   try {
+    // Déterminer l'ordre automatiquement
+    const lastSmartLink = await SmartLinkV2.findOne(
+      folder && mongoose.Types.ObjectId.isValid(folder) 
+        ? { folder } 
+        : { folder: null }
+    ).sort({ order: -1 });
+    const newOrder = lastSmartLink ? lastSmartLink.order + 1 : 0;
+
     const newSmartLink = new SmartLinkV2({
       id: uuidv4(),
       title,
@@ -24,6 +32,7 @@ exports.addSmartLink = async (req, res) => {
       modifiedTitle,
       link,
       folder: folder && mongoose.Types.ObjectId.isValid(folder) ? folder : null,
+      order: newOrder, // ✅ Ajout de l'ordre
     });
 
     await newSmartLink.save();
@@ -47,9 +56,10 @@ exports.addSmartLink = async (req, res) => {
   }
 };
 
+// ✅ Récupérer tous les SmartLinks triés par ordre
 exports.findAllSmartLinks = async (req, res) => {
   try {
-    const smartLinks = await SmartLinkV2.find();
+    const smartLinks = await SmartLinkV2.find().sort({ order: 1 });
     res.status(200).json({ message: "Liste des smartLinks", data: smartLinks });
   } catch (error) {
     res.status(400).json({
@@ -105,6 +115,12 @@ exports.updateSmartLink = async (req, res) => {
 
     // ✅ Si c'est un SmartLink V1 et un dossier est ajouté -> Supprimer et recréer en V2
     if (existingSmartLink instanceof SmartLink && updateData.folder) {
+      // Déterminer l'ordre pour le nouveau dossier
+      const lastSmartLink = await SmartLinkV2.findOne({
+        folder: new mongoose.Types.ObjectId(updateData.folder),
+      }).sort({ order: -1 });
+      const newOrder = lastSmartLink ? lastSmartLink.order + 1 : 0;
+
       // 1️⃣ Supprimer le SmartLink V1
       await SmartLink.findByIdAndDelete(id);
 
@@ -117,7 +133,8 @@ exports.updateSmartLink = async (req, res) => {
         modifiedTitle:
           updateData.modifiedTitle || existingSmartLink.modifiedTitle,
         link: updateData.link || existingSmartLink.link,
-        folder: new mongoose.Types.ObjectId(updateData.folder), // Associer au nouveau dossier
+        folder: new mongoose.Types.ObjectId(updateData.folder),
+        order: newOrder, // ✅ Ajout de l'ordre
       });
 
       await newSmartLinkV2.save();
@@ -156,11 +173,6 @@ exports.updateSmartLink = async (req, res) => {
       );
     }
 
-    // ✅ Vérifie si le parentFolder est bien mis à jour
-    const updatedFolder = await Folder.findById(updateData.folder).populate(
-      "parentFolder"
-    );
-
     res.status(200).json({
       message: "SmartLink mis à jour avec succès",
       data: updatedSmartLink,
@@ -169,6 +181,119 @@ exports.updateSmartLink = async (req, res) => {
     console.error("❌ Erreur lors de la mise à jour :", error);
     res.status(400).json({
       message: "Erreur lors de la mise à jour du SmartLink",
+      error: error.message,
+    });
+  }
+};
+
+// ✅ **Mettre à jour l'ordre des SmartLinks**
+exports.updateOrder = async (req, res) => {
+  try {
+    const { orderedSmartLinks } = req.body;
+    if (!Array.isArray(orderedSmartLinks)) {
+      console.error("❌ ERREUR: orderedSmartLinks doit être un tableau !");
+      return res
+        .status(400)
+        .json({ error: "orderedSmartLinks doit être un tableau" });
+    }
+
+    const currentOrders = {};
+    const smartLinkDocs = await SmartLinkV2.find();
+
+    smartLinkDocs.forEach((doc) => {
+      currentOrders[doc._id.toString()] = doc.order;
+    });
+
+    for (const smartLink of orderedSmartLinks) {
+      const { _id, order: newOrder } = smartLink;
+
+      if (!mongoose.Types.ObjectId.isValid(_id)) {
+        console.error(`❌ ID invalide : ${_id}`);
+        return res.status(400).json({ error: `ID invalide : ${_id}` });
+      }
+
+      const oldOrder = currentOrders[_id];
+
+      if (oldOrder !== newOrder) {
+        const swappedSmartLink = await SmartLinkV2.findOne({ order: newOrder });
+
+        if (swappedSmartLink) {
+          await SmartLinkV2.updateOne(
+            { _id: swappedSmartLink._id },
+            { $set: { order: oldOrder } }
+          );
+        }
+
+        await SmartLinkV2.updateOne(
+          { _id: new mongoose.Types.ObjectId(_id) },
+          { $set: { order: newOrder } }
+        );
+      }
+    }
+
+    res.json({ message: "Ordre mis à jour avec succès !" });
+  } catch (error) {
+    console.error("❌ Erreur serveur dans updateOrder :", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ✅ Déplacer un SmartLink vers un autre dossier
+exports.moveSmartLink = async (req, res) => {
+  const { smartLinkId, newFolderId } = req.body;
+
+  console.log("📥 Déplacement du SmartLink :", smartLinkId, "vers", newFolderId);
+
+  if (!mongoose.Types.ObjectId.isValid(smartLinkId)) {
+    return res.status(400).json({ message: "ID du SmartLink invalide." });
+  }
+
+  if (newFolderId && newFolderId !== "no-folder" && !mongoose.Types.ObjectId.isValid(newFolderId)) {
+    return res.status(400).json({ message: "ID du dossier invalide." });
+  }
+
+  try {
+    const smartLink = await SmartLinkV2.findById(smartLinkId);
+    if (!smartLink) {
+      return res.status(404).json({ message: "SmartLink non trouvé." });
+    }
+
+    const oldFolderId = smartLink.folder;
+
+    // Retirer du dossier précédent
+    if (oldFolderId) {
+      await Folder.findByIdAndUpdate(oldFolderId, {
+        $pull: { smartLinks: smartLinkId },
+      });
+    }
+
+    // Ajouter au nouveau dossier
+    const finalFolderId = newFolderId === "no-folder" ? null : newFolderId;
+    if (finalFolderId) {
+      await Folder.findByIdAndUpdate(finalFolderId, {
+        $push: { smartLinks: smartLinkId },
+      });
+    }
+
+    // Déterminer le nouvel ordre
+    const lastSmartLink = await SmartLinkV2.findOne(
+      finalFolderId ? { folder: finalFolderId } : { folder: null }
+    ).sort({ order: -1 });
+    const newOrder = lastSmartLink ? lastSmartLink.order + 1 : 0;
+
+    // Mettre à jour le SmartLink
+    smartLink.folder = finalFolderId ? new mongoose.Types.ObjectId(finalFolderId) : null;
+    smartLink.order = newOrder;
+    await smartLink.save();
+
+    res.status(200).json({
+      message: "✅ SmartLink déplacé avec succès",
+      data: smartLink,
+    });
+  } catch (error) {
+    console.error("❌ Erreur lors du déplacement du SmartLink :", error);
+    res.status(400).json({
+      message: "Erreur lors du déplacement du SmartLink",
       error: error.message,
     });
   }
@@ -209,7 +334,7 @@ exports.deleteSmartLink = async (req, res) => {
       data: smartLink.toObject(),
     });
 
-    // ✅ Supprimer l'entrée d’origine
+    // ✅ Supprimer l'entrée d'origine
     if (entityType === "SmartLinkV2") {
       await SmartLinkV2.deleteOne({ _id: id });
     } else {

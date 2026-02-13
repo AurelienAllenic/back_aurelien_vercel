@@ -7,12 +7,12 @@ const Trash = require("../models/Trash");
 
 // ✅ Ajouter un lien avec ordre automatique
 exports.addSmartLink = async (req, res) => {
-  const { title, linkType, titleType, modifiedTitle, link, folder } = req.body;
+  const { title, linkType, linkTypePrefix, titleType, modifiedTitle, link, folder } = req.body;
 
   if (!title || !linkType || !titleType || !modifiedTitle || !link) {
     return res
       .status(400)
-      .json({ message: "Tous les champs sont requis, sauf le dossier." });
+      .json({ message: "Tous les champs sont requis, sauf le dossier et le préfixe." });
   }
 
   try {
@@ -28,11 +28,12 @@ exports.addSmartLink = async (req, res) => {
       id: uuidv4(),
       title,
       linkType,
+      linkTypePrefix: linkTypePrefix || "", // ✅ Ajout du préfixe (optionnel)
       titleType,
       modifiedTitle,
       link,
       folder: folder && mongoose.Types.ObjectId.isValid(folder) ? folder : null,
-      order: newOrder, // ✅ Ajout de l'ordre
+      order: newOrder,
     });
 
     await newSmartLink.save();
@@ -129,12 +130,13 @@ exports.updateSmartLink = async (req, res) => {
         id: uuidv4(),
         title: updateData.title || existingSmartLink.title,
         linkType: updateData.linkType || existingSmartLink.linkType,
+        linkTypePrefix: updateData.linkTypePrefix || "", // ✅ Ajout du préfixe
         titleType: updateData.titleType || existingSmartLink.titleType,
         modifiedTitle:
           updateData.modifiedTitle || existingSmartLink.modifiedTitle,
         link: updateData.link || existingSmartLink.link,
         folder: new mongoose.Types.ObjectId(updateData.folder),
-        order: newOrder, // ✅ Ajout de l'ordre
+        order: newOrder,
       });
 
       await newSmartLinkV2.save();

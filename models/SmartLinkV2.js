@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const SmartLinkV2Schema = new mongoose.Schema({
   title: { type: String, required: true, unique: true },
   linkType: { type: String, required: true },
+  linkTypePrefix: { type: String, required: false },
   titleType: { type: String, required: true },
   modifiedTitle: { type: String, required: true, unique: false },
   link: { type: String, required: true, unique: true },

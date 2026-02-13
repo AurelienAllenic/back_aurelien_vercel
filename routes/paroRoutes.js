@@ -87,6 +87,7 @@ router.delete(
   auth,
   smartLinkFolderController.deleteFolder
 );
+router.put("/order-folders", smartLinkFolderController.updateOrder);
 
 // VIDEO ROUTES
 router.post("/add-video", auth, uploadImage, videoController.addVideo);

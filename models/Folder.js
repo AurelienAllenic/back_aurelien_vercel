@@ -23,7 +23,11 @@ const FolderSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "SmartLinkV2",
       },
-    ], // ✅ On remet les smartLinks
+    ],
+    order: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

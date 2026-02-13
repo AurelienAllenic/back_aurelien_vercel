@@ -13,11 +13,18 @@ exports.addFolder = async (req, res) => {
   }
 
   try {
+    // Déterminer l'ordre automatiquement
+    const lastFolder = await Folder.findOne(
+      parentFolder ? { parentFolder } : { parentFolder: null }
+    ).sort({ order: -1 });
+    const newOrder = lastFolder ? lastFolder.order + 1 : 0;
+
     const newFolder = new Folder({
       title,
       parentFolder: parentFolder
         ? new mongoose.Types.ObjectId(parentFolder)
         : null,
+      order: newOrder,
     });
 
     await newFolder.save();
@@ -42,13 +49,13 @@ exports.addFolder = async (req, res) => {
 };
 
 // ✅ Récupérer tous les dossiers
-// ✅ Récupérer tous les dossiers avec leurs relations
 exports.findAllFolders = async (req, res) => {
   try {
     const folders = await Folder.find()
-      .populate("smartLinks") // Populate les SmartLinks associés
-      .populate("parentFolder") // Populate le dossier parent
-      .populate("children"); // Populate les sous-dossiers
+      .populate("smartLinks")
+      .populate("parentFolder")
+      .populate("children")
+      .sort({ order: 1 });
 
     res.status(200).json({ message: "Liste des dossiers", data: folders });
   } catch (error) {
@@ -128,6 +135,60 @@ exports.updateFolder = async (req, res) => {
   }
 };
 
+// ✅ **Mettre à jour l'ordre des dossiers**
+exports.updateOrder = async (req, res) => {
+  try {
+    const { orderedFolders } = req.body;
+    if (!Array.isArray(orderedFolders)) {
+      console.error("❌ ERREUR: orderedFolders doit être un tableau !");
+      return res
+        .status(400)
+        .json({ error: "orderedFolders doit être un tableau" });
+    }
+
+    const currentOrders = {};
+    const folderDocs = await Folder.find();
+
+    folderDocs.forEach((doc) => {
+      currentOrders[doc._id.toString()] = doc.order;
+    });
+
+    for (const folder of orderedFolders) {
+      const { _id, order: newOrder } = folder;
+
+      if (!mongoose.Types.ObjectId.isValid(_id)) {
+        console.error(`❌ ID invalide : ${_id}`);
+        return res.status(400).json({ error: `ID invalide : ${_id}` });
+      }
+
+      const oldOrder = currentOrders[_id];
+
+      if (oldOrder !== newOrder) {
+        const swappedFolder = await Folder.findOne({ order: newOrder });
+
+        if (swappedFolder) {
+          await Folder.updateOne(
+            { _id: swappedFolder._id },
+            { $set: { order: oldOrder } }
+          );
+        }
+
+        await Folder.updateOne(
+          { _id: new mongoose.Types.ObjectId(_id) },
+          { $set: { order: newOrder } }
+        );
+      }
+    }
+
+    const updatedFolders = await Folder.find().sort({ order: 1 });
+    res.json({ message: "Ordre mis à jour avec succès !" });
+  } catch (error) {
+    console.error("❌ Erreur serveur dans updateOrder :", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ✅ Supprimer un dossier
 exports.deleteFolder = async (req, res) => {
   const { id } = req.params;
   const { deleteSmartLinks } = req.body;

@@ -258,3 +258,84 @@ exports.deleteFolder = async (req, res) => {
     });
   }
 };
+
+
+exports.moveFolder = async (req, res) => {
+  const { folderId, newParentId } = req.body;
+
+  console.log("📥 Déplacement du dossier :", folderId, "vers", newParentId);
+
+  if (!mongoose.Types.ObjectId.isValid(folderId)) {
+    return res.status(400).json({ message: "ID du dossier invalide." });
+  }
+
+  if (newParentId && !mongoose.Types.ObjectId.isValid(newParentId)) {
+    return res.status(400).json({ message: "ID du parent invalide." });
+  }
+
+  try {
+    const folder = await Folder.findById(folderId);
+    if (!folder) {
+      return res.status(404).json({ message: "Dossier non trouvé." });
+    }
+
+    const oldParentId = folder.parentFolder;
+
+    // Vérifier qu'on ne déplace pas un dossier dans lui-même ou dans un de ses enfants
+    if (newParentId) {
+      const getAllSubfolders = async (folderId) => {
+        let subfolders = await Folder.find({ parentFolder: folderId });
+        for (const subfolder of subfolders) {
+          const nestedSubfolders = await getAllSubfolders(subfolder._id);
+          subfolders = subfolders.concat(nestedSubfolders);
+        }
+        return subfolders;
+      };
+
+      const subfolders = await getAllSubfolders(folderId);
+      const subfolderIds = subfolders.map(f => f._id.toString());
+      
+      if (newParentId === folderId || subfolderIds.includes(newParentId)) {
+        return res.status(400).json({ 
+          message: "Impossible de déplacer un dossier dans lui-même ou dans un de ses sous-dossiers." 
+        });
+      }
+    }
+
+    // Retirer le dossier de l'ancien parent
+    if (oldParentId) {
+      await Folder.findByIdAndUpdate(oldParentId, {
+        $pull: { children: folderId },
+      });
+    }
+
+    // Ajouter le dossier au nouveau parent
+    if (newParentId) {
+      await Folder.findByIdAndUpdate(newParentId, {
+        $push: { children: folderId },
+      });
+    }
+
+    // Déterminer le nouvel ordre
+    const lastFolder = await Folder.findOne(
+      newParentId ? { parentFolder: newParentId } : { parentFolder: null }
+    ).sort({ order: -1 });
+    const newOrder = lastFolder ? lastFolder.order + 1 : 0;
+
+    // Mettre à jour le dossier
+    folder.parentFolder = newParentId ? new mongoose.Types.ObjectId(newParentId) : null;
+    folder.order = newOrder;
+    await folder.save();
+
+    res.status(200).json({ 
+      message: "✅ Dossier déplacé avec succès", 
+      data: folder 
+    });
+  } catch (error) {
+    console.error("❌ Erreur lors du déplacement du dossier :", error);
+    res.status(400).json({
+      message: "Erreur lors du déplacement du dossier",
+      error: error.message,
+    });
+  }
+};

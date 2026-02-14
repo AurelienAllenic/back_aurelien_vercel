@@ -1,9 +1,12 @@
 const brevo = require('@getbrevo/brevo');
+const getMessageModel = require('../models/Message');
+const { encrypt } = require('../utils/encryption');
+const { verifyRecaptcha } = require('../utils/recaptcha');
 
 // Initialiser l'API Brevo
 const apiInstance = new brevo.TransactionalEmailsApi();
 apiInstance.setApiKey(
-  brevo.TransactionalEmailsApiApiKeys.apiKey, 
+  brevo.TransactionalEmailsApiApiKeys.apiKey,
   process.env.BREVO_API_KEY
 );
 
@@ -11,23 +14,42 @@ apiInstance.setApiKey(
  * Gère l'envoi d'emails depuis le formulaire de contact PARO
  */
 exports.handleParoContact = async (req, res) => {
-  const { email, message } = req.body;
+  const { email, message, 'g-recaptcha-response': captchaResponse, recaptchaToken } = req.body;
+  const captchaToken = recaptchaToken || captchaResponse;
+  const recaptchaSecret = process.env.RECAPTCHA_SECRET_KEY;
 
   // Validation
   if (!email || !message) {
-    return res.status(400).json({ 
-      success: false, 
-      error: 'Email et message sont requis' 
+    return res.status(400).json({
+      success: false,
+      error: 'Email et message sont requis',
     });
   }
 
   // Validation email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return res.status(400).json({ 
-      success: false, 
-      error: 'Format d\'email invalide' 
+    return res.status(400).json({
+      success: false,
+      error: "Format d'email invalide",
     });
+  }
+
+  // Vérification reCAPTCHA si la clé secrète est configurée
+  if (recaptchaSecret) {
+    if (!captchaToken) {
+      return res.status(400).json({
+        success: false,
+        error: 'Vérification de sécurité requise. Veuillez accepter les cookies et réessayer.',
+      });
+    }
+    const verification = await verifyRecaptcha(captchaToken, recaptchaSecret, 'contact', 0.5);
+    if (!verification.success) {
+      return res.status(400).json({
+        success: false,
+        error: 'Vérification de sécurité échouée. Veuillez réessayer.',
+      });
+    }
   }
 
   try {
@@ -203,22 +225,75 @@ exports.handleParoContact = async (req, res) => {
     await apiInstance.sendTransacEmail(confirmationEmail);
     console.log(`✅ Email confirmation envoyé à ${email}`);
 
-    res.status(200).json({ 
-      success: true, 
-      message: 'Votre message a été envoyé avec succès ! Nous vous répondrons rapidement.' 
+    res.status(200).json({
+      success: true,
+      message: 'Votre message a été envoyé avec succès ! Nous vous répondrons rapidement.',
     });
 
+    // Créer le message chiffré en BDD en arrière-plan
+    (async () => {
+      try {
+        const Message = await Promise.race([
+          getMessageModel(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout récupération modèle')), 5000)),
+        ]);
+        if (Message) {
+          const encryptedEmail = encrypt(email);
+          const encryptedMessage = encrypt(message);
+          const messageDoc = new Message({
+            email: encryptedEmail,
+            message: encryptedMessage,
+            send: true,
+          });
+          await Promise.race([
+            messageDoc.save(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde')), 3000)),
+          ]);
+          console.log('✅ [Message] Message chiffré créé en BDD (ID:', messageDoc._id, ')');
+        }
+      } catch (err) {
+        console.error('❌ [Message] Erreur création message:', err.message);
+      }
+    })();
   } catch (error) {
     console.error('❌ Erreur Brevo:', error);
-    
-    // Log détaillé pour debug
+
+    let errorMessage = error.message;
     if (error.response) {
       console.error('Détails:', error.response.body);
+      errorMessage = JSON.stringify(error.response.body);
     }
-    
-    res.status(500).json({ 
-      success: false, 
-      error: 'Une erreur est survenue lors de l\'envoi. Veuillez réessayer dans quelques instants.' 
+
+    res.status(500).json({
+      success: false,
+      error: "Une erreur est survenue lors de l'envoi. Veuillez réessayer dans quelques instants.",
     });
+
+    // Créer le message avec erreur en BDD en arrière-plan
+    (async () => {
+      try {
+        const Message = await Promise.race([
+          getMessageModel(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout récupération modèle')), 5000)),
+        ]);
+        if (Message) {
+          const encryptedEmail = encrypt(email);
+          const encryptedMessage = encrypt(message);
+          const messageDoc = new Message({
+            email: encryptedEmail,
+            message: encryptedMessage,
+            send: false,
+            error: errorMessage,
+          });
+          await Promise.race([
+            messageDoc.save(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout sauvegarde')), 3000)),
+          ]);
+          console.log('❌ [Message] Message chiffré créé en BDD avec erreur (ID:', messageDoc._id, ')');
+        }
+      } catch (dbErr) {
+        console.error('❌ [Message] Erreur création message:', dbErr.message);
+      }
+    })();
   }
 };

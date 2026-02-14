@@ -19,6 +19,7 @@ const { uploadSingleImages } = require("../middlewares/multerMiddleware");
 const trashController = require("../controllers/trashController");
 const freshNewsController = require("../controllers/freshNewsController");
 const paroContactController = require("../controllers/paroContactController");
+const messageController = require("../controllers/messageController");
 const linktreeBlockController = require("../controllers/linktreeBlockController");
 const linktreeProfileController = require("../controllers/linktreeProfileController");
 
@@ -160,6 +161,11 @@ router.post("/fresh-news", freshNewsController.upsertFreshNews);
 
 // PARO CONTACT ROUTE
 router.post("/paro-contact", paroContactController.handleParoContact);
+
+// MESSAGES (backoffice – liste, détail, suppression, décryptés)
+router.get("/messages", auth, messageController.findAllMessages);
+router.get("/messages/:id", auth, messageController.findOneMessage);
+router.delete("/messages/:id", auth, messageController.deleteMessage);
 
 // ========== LINKTREE BLOCKS ==========
 // Routes publiques (pas d'auth)

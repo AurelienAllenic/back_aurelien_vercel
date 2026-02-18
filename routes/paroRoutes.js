@@ -69,7 +69,7 @@ router.post("/add-press", auth, uploadImage, pressController.createPress);
 router.get("/press/:id", auth, pressController.getPress);
 router.put("/press/:id", auth, uploadImage, pressController.updatePress);
 router.delete("/press/:id", auth, pressController.deletePress);
-router.get("/all-press", auth, pressController.findAllPress);
+router.get("/all-press", pressController.findAllPress);
 router.put("/order-press", auth, pressController.updateOrder);
 
 // FOLDERS ROUTES

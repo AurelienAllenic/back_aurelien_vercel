@@ -20,6 +20,7 @@ const trashController = require("../controllers/trashController");
 const freshNewsController = require("../controllers/freshNewsController");
 const paroContactController = require("../controllers/paroContactController");
 const messageController = require("../controllers/messageController");
+const newsletterController = require("../controllers/newsletterController");
 const linktreeBlockController = require("../controllers/linktreeBlockController");
 const linktreeProfileController = require("../controllers/linktreeProfileController");
 
@@ -161,6 +162,9 @@ router.post("/fresh-news", freshNewsController.upsertFreshNews);
 
 // PARO CONTACT ROUTE
 router.post("/paro-contact", paroContactController.handleParoContact);
+
+// NEWSLETTER ROUTE
+router.post("/subscribe-newsletter", newsletterController.subscribeNewsletter);
 
 // MESSAGES (backoffice – liste, détail, suppression, décryptés)
 router.get("/messages", auth, messageController.findAllMessages);

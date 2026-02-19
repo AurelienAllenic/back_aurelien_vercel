@@ -39,9 +39,9 @@ exports.subscribeNewsletter = async (req, res) => {
   }
 
   try {
-    // IDs des listes Brevo (à configurer dans votre .env)
-    const newsletterListId = parseInt(process.env.BREVO_NEWSLETTER_LIST_ID || '0');
-    const mailingListId = parseInt(process.env.BREVO_MAILING_LIST_ID || '0');
+    // IDs des listes Brevo (Newsletter #7, Mailing List #8)
+    const newsletterListId = parseInt(process.env.BREVO_NEWSLETTER_LIST_ID || '7');
+    const mailingListId = parseInt(process.env.BREVO_MAILING_LIST_ID || '8');
 
     // Préparer les listes d'abonnement
     const listIds = [];

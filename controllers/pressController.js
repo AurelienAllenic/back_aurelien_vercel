@@ -12,7 +12,7 @@ cloudinary.config({
 // **Créer un article de presse avec un ordre**
 exports.createPress = async (req, res) => {
   try {
-    const { link, alt, isActive } = req.body;
+    const { link, linkMobile, alt, isActive } = req.body;
     if (!req.file || !req.file.path) {
       return res.status(400).json({ error: "Aucune image fournie" });
     }
@@ -24,6 +24,7 @@ exports.createPress = async (req, res) => {
     const press = new Press({
       image: result.secure_url,
       link: link && link.trim() !== "" ? link : null,
+      linkMobile: linkMobile && linkMobile.trim() !== "" ? linkMobile.trim() : "",
       alt,
       order: newOrder,
       isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
@@ -59,9 +60,12 @@ exports.findAllPress = async (req, res) => {
 // **Mettre à jour un article de presse**
 exports.updatePress = async (req, res) => {
   try {
-    const { link, alt, isActive } = req.body;
+    const { link, linkMobile, alt, isActive } = req.body;
     let updateData = { alt };
     updateData.link = link && link.trim() !== "" ? link : null;
+    if (linkMobile !== undefined) {
+      updateData.linkMobile = linkMobile && linkMobile.trim() !== "" ? linkMobile.trim() : "";
+    }
     if (isActive !== undefined) {
       updateData.isActive = isActive === "true" || isActive === true;
     }

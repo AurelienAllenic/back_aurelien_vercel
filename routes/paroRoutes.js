@@ -23,6 +23,17 @@ const messageController = require("../controllers/messageController");
 const newsletterController = require("../controllers/newsletterController");
 const linktreeBlockController = require("../controllers/linktreeBlockController");
 const linktreeProfileController = require("../controllers/linktreeProfileController");
+const analyticsController = require("../controllers/analyticsController");
+
+// ANALYTICS (même structure que back_aurelienallenicfr)
+router.post("/track", analyticsController.trackEvent);
+router.post("/analytics/aggregate", auth, analyticsController.aggregateDaily);
+router.get("/analytics/daily", auth, analyticsController.getDailyStats);
+router.get("/analytics/monthly", auth, analyticsController.getMonthlyStats);
+router.get("/analytics/yearly", auth, analyticsController.getYearlyStats);
+router.get("/analytics/cron-aggregate", analyticsController.cronAggregateDaily);
+router.get("/analytics/cron-aggregate-monthly", analyticsController.cronAggregateMonthly);
+router.get("/analytics/cron-aggregate-yearly", analyticsController.cronAggregateYearly);
 
 // RADIO ROUTES
 router.post("/add-radio", auth, uploadImage, radioController.addRadio);

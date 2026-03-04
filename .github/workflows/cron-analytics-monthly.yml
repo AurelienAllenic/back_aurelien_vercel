@@ -1,0 +1,17 @@
+name: Monthly Analytics Aggregation
+
+on:
+  schedule:
+    - cron: '40 22 1 * *'  # Le 1er de chaque mois à 22:40 UTC
+  workflow_dispatch:
+
+jobs:
+  aggregate-monthly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call monthly aggregation endpoint
+        run: |
+          curl -X GET "${{ secrets.BACKEND_URL }}/analytics/cron-aggregate-monthly?secret=${{ secrets.CRON_SECRET }}" \
+            --max-time 60 \
+            --retry 2 \
+            --retry-delay 5

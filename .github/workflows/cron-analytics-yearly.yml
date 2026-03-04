@@ -1,0 +1,17 @@
+name: Yearly Analytics Aggregation
+
+on:
+  schedule:
+    - cron: '50 22 1 1 *'  # Le 1er janvier à 22:50 UTC
+  workflow_dispatch:
+
+jobs:
+  aggregate-yearly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call yearly aggregation endpoint
+        run: |
+          curl -X GET "${{ secrets.BACKEND_URL }}/analytics/cron-aggregate-yearly?secret=${{ secrets.CRON_SECRET }}" \
+            --max-time 60 \
+            --retry 2 \
+            --retry-delay 5

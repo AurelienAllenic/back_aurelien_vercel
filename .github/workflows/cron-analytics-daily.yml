@@ -1,0 +1,17 @@
+name: Daily Analytics Aggregation
+
+on:
+  schedule:
+    - cron: '30 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call aggregation endpoint
+        run: |
+          curl -X GET "${{ secrets.BACKEND_URL }}/analytics/cron-aggregate?secret=${{ secrets.CRON_SECRET }}" \
+            --max-time 30 \
+            --retry 2 \
+            --retry-delay 5

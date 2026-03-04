@@ -11,6 +11,8 @@ const AnalyticsDailySchema = new mongoose.Schema({
   clicks: { type: Map, of: Number, default: {} },
   uniqueVisitors: { type: Number, default: 0 },
   visitorIds: { type: [String], default: [] },
+  // Vues par path (ex: { "/": 10, "/immersive-video": 3 })
+  pageViewsByPath: { type: Object, default: {} },
 });
 
 module.exports = mongoose.model("AnalyticsDaily", AnalyticsDailySchema);

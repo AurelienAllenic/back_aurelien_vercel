@@ -33,6 +33,13 @@ async function aggregateDailyStats() {
     const results = [];
     for (const [dateString, dayEvents] of Object.entries(eventsByDate)) {
       const pageViews = dayEvents.filter((e) => e.type === "PAGE_VIEW").length;
+      const pageViewsByPath = {};
+      dayEvents.forEach((event) => {
+        if (event.type === "PAGE_VIEW" && event.path) {
+          const p = event.path || "/";
+          pageViewsByPath[p] = (pageViewsByPath[p] || 0) + 1;
+        }
+      });
       const clicks = {};
       const visitorIds = new Set();
       dayEvents.forEach((event) => {
@@ -43,11 +50,15 @@ async function aggregateDailyStats() {
 
       const existing = await AnalyticsDaily.findOne({ date: dateString });
       let finalPageViews = pageViews;
+      const finalPageViewsByPath = { ...pageViewsByPath };
       const finalClicks = { ...clicks };
       const finalVisitorIds = new Set(visitorIds);
 
       if (existing) {
         finalPageViews += existing.pageViews || 0;
+        Object.entries(existing.pageViewsByPath || {}).forEach(([path, count]) => {
+          finalPageViewsByPath[path] = (finalPageViewsByPath[path] || 0) + count;
+        });
         const prevClicks = clicksToObject(existing.clicks);
         Object.entries(prevClicks).forEach(([label, count]) => {
           finalClicks[label] = (finalClicks[label] || 0) + count;
@@ -59,6 +70,7 @@ async function aggregateDailyStats() {
         { date: dateString },
         {
           pageViews: finalPageViews,
+          pageViewsByPath: finalPageViewsByPath,
           clicks: finalClicks,
           uniqueVisitors: finalVisitorIds.size,
           visitorIds: Array.from(finalVisitorIds),
@@ -95,6 +107,7 @@ async function aggregateMonthlyStats(year, month) {
     const dailyStats = days.map((day) => ({
       date: day.date,
       pageViews: day.pageViews,
+      pageViewsByPath: day.pageViewsByPath || {},
       clicks: clicksToObject(day.clicks),
       uniqueVisitors: day.uniqueVisitors,
       visitorIds: day.visitorIds || [],
@@ -146,6 +159,7 @@ async function aggregateYearlyStats(year) {
       dailyStats: (m.dailyStats || []).map((d) => ({
         date: d.date,
         pageViews: d.pageViews,
+        pageViewsByPath: d.pageViewsByPath || {},
         clicks: clicksToObject(d.clicks),
         uniqueVisitors: d.uniqueVisitors,
         visitorIds: d.visitorIds || [],

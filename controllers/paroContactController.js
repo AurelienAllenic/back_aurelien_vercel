@@ -1,22 +1,20 @@
-const brevo = require('@getbrevo/brevo');
+const { Resend } = require('resend');
 const getMessageModel = require('../models/Message');
 const { encrypt } = require('../utils/encryption');
 const { verifyRecaptcha } = require('../utils/recaptcha');
 
-// Initialiser l'API Brevo
-const apiInstance = new brevo.TransactionalEmailsApi();
-apiInstance.setApiKey(
-  brevo.TransactionalEmailsApiApiKeys.apiKey,
-  process.env.BREVO_API_KEY
-);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
- * Gère l'envoi d'emails depuis le formulaire de contact PARO
+ * Gère l'envoi d'emails depuis le formulaire de contact PARO (via Resend)
  */
 exports.handleParoContact = async (req, res) => {
   const { email, message, 'g-recaptcha-response': captchaResponse, recaptchaToken } = req.body;
   const captchaToken = recaptchaToken || captchaResponse;
   const recaptchaSecret = process.env.RECAPTCHA_SECRET_KEY;
+
+  const senderEmail = process.env.PARO_SENDER_EMAIL || process.env.SENDER_EMAIL || 'onboarding@resend.dev';
+  const adminEmail = process.env.PARO_ADMIN_EMAIL || 'contact@paro-musique.com';
 
   // Validation
   if (!email || !message) {
@@ -53,20 +51,8 @@ exports.handleParoContact = async (req, res) => {
   }
 
   try {
-    // 1️⃣ Email pour vous (admin PARO)
-    const adminEmail = {
-      sender: { 
-        email: 'Paro.musique.mgmt@gmail.com', 
-        name: 'PARO Contact Form' 
-      },
-      to: [{ 
-        email: process.env.PARO_ADMIN_EMAIL || 'contact@paro-musique.com'
-      }],
-      replyTo: { 
-        email: email
-      },
-      subject: `[PARO] Nouveau message de contact`,
-      htmlContent: `
+    // 1️⃣ Email pour l'admin PARO
+    const adminHtml = `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 650px; margin: 0 auto; background: #f8f9fa;">
           
           <!-- Header -->
@@ -141,23 +127,19 @@ exports.handleParoContact = async (req, res) => {
           </div>
           
         </div>
-      `,
-    };
+    `;
 
-    await apiInstance.sendTransacEmail(adminEmail);
+    await resend.emails.send({
+      from: `PARO Contact Form <${senderEmail}>`,
+      to: adminEmail,
+      reply_to: email,
+      subject: '[PARO] Nouveau message de contact',
+      html: adminHtml,
+    });
     console.log(`✅ Email admin PARO envoyé depuis ${email}`);
 
     // 2️⃣ Email de confirmation pour le visiteur
-    const confirmationEmail = {
-      sender: { 
-        email: 'Paro.musique.mgmt@gmail.com', 
-        name: 'PARO' 
-      },
-      to: [{ 
-        email: email
-      }],
-      subject: 'Message bien reçu ! 🎵',
-      htmlContent: `
+    const confirmationHtml = `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa;">
           
           <!-- Header -->
@@ -219,10 +201,14 @@ exports.handleParoContact = async (req, res) => {
           </div>
           
         </div>
-      `,
-    };
+    `;
 
-    await apiInstance.sendTransacEmail(confirmationEmail);
+    await resend.emails.send({
+      from: `PARO <${senderEmail}>`,
+      to: email,
+      subject: 'Message bien reçu ! 🎵',
+      html: confirmationHtml,
+    });
     console.log(`✅ Email confirmation envoyé à ${email}`);
 
     res.status(200).json({
@@ -256,13 +242,9 @@ exports.handleParoContact = async (req, res) => {
       }
     })();
   } catch (error) {
-    console.error('❌ Erreur Brevo:', error);
+    console.error('❌ Erreur Resend (contact PARO):', error);
 
-    let errorMessage = error.message;
-    if (error.response) {
-      console.error('Détails:', error.response.body);
-      errorMessage = JSON.stringify(error.response.body);
-    }
+    const errorMessage = error.message || 'Erreur Resend';
 
     res.status(500).json({
       success: false,

@@ -174,8 +174,10 @@ router.post("/fresh-news", freshNewsController.upsertFreshNews);
 // PARO CONTACT ROUTE
 router.post("/paro-contact", paroContactController.handleParoContact);
 
-// NEWSLETTER ROUTE
+// NEWSLETTER / MAILING LIST ROUTES
 router.post("/subscribe-newsletter", newsletterController.subscribeNewsletter);
+router.get("/unsubscribe", newsletterController.unsubscribe);
+router.get("/subscriptions", auth, newsletterController.getSubscriptions);
 
 // MESSAGES (backoffice – liste, détail, suppression, décryptés)
 router.get("/messages", auth, messageController.findAllMessages);

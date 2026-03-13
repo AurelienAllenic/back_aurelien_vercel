@@ -1,127 +1,250 @@
-const brevo = require('@getbrevo/brevo');
+const { Resend } = require("resend");
+const Subscription = require("../models/Subscription");
 
-// Initialiser l'API Brevo pour les contacts
-const contactsApi = new brevo.ContactsApi();
-contactsApi.setApiKey(
-  brevo.ContactsApiApiKeys.apiKey,
-  process.env.BREVO_API_KEY
-);
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const SITE_NAME = process.env.SITE_NAME || "PARO";
+const SENDER_EMAIL =
+  process.env.SENDER_EMAIL || "contact@paro-musique.com";
+const FRONTEND_URL =
+  process.env.SITE_URL ||
+  process.env.FRONTEND_URL ||
+  "https://paro-musique.com";
 
 /**
- * Gère l'abonnement à la newsletter et/ou mailing list
+ * Gère l'abonnement à la newsletter et/ou à la mailing list.
+ * On stocke les inscriptions dans MongoDB (modèle Subscription)
+ * et on envoie un email de confirmation via Resend.
  */
 exports.subscribeNewsletter = async (req, res) => {
   const { email, newsletter, mailingList } = req.body;
 
-  // Validation
   if (!email) {
     return res.status(400).json({
       success: false,
-      error: 'L\'adresse email est requise'
+      error: "L'adresse email est requise",
     });
   }
 
-  // Validation email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({
       success: false,
-      error: 'Format d\'email invalide'
+      error: "Format d'email invalide",
     });
   }
 
-  // Vérifier qu'au moins une option est sélectionnée
   if (!newsletter && !mailingList) {
     return res.status(400).json({
       success: false,
-      error: 'Veuillez sélectionner au moins une option (newsletter ou mailing list)'
+      error:
+        "Veuillez sélectionner au moins une option (newsletter ou mailing list)",
     });
   }
 
   try {
-    // IDs des listes Brevo (Newsletter #7, Mailing List #8)
-    const newsletterListId = parseInt(process.env.BREVO_NEWSLETTER_LIST_ID || '7');
-    const mailingListId = parseInt(process.env.BREVO_MAILING_LIST_ID || '8');
+    const normalizedEmail = email.trim().toLowerCase();
+    const subscribedTypes = [];
 
-    // Préparer les listes d'abonnement
-    const listIds = [];
-    if (newsletter && newsletterListId > 0) {
-      listIds.push(newsletterListId);
-    }
-    if (mailingList && mailingListId > 0) {
-      listIds.push(mailingListId);
-    }
-
-    if (listIds.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Aucune liste configurée. Veuillez configurer les IDs des listes dans le backend.'
+    // Helper pour créer / réactiver une inscription
+    const upsertSubscription = async (type) => {
+      const existing = await Subscription.findOne({
+        email: normalizedEmail,
+        type,
       });
-    }
 
-    // Créer ou mettre à jour le contact dans Brevo
-    const createContact = new brevo.CreateContact();
-    createContact.email = email.trim();
-    createContact.listIds = listIds;
-    createContact.updateEnabled = true; // Mettre à jour si le contact existe déjà
+      if (existing) {
+        if (!existing.active) {
+          existing.active = true;
+          existing.unsubscribedAt = null;
+          existing.subscribedAt = new Date();
+          await existing.save();
+        }
+        return existing;
+      }
 
-    // Ajouter des attributs optionnels
-    createContact.attributes = {
-      NEWSLETTER: newsletter || false,
-      MAILING_LIST: mailingList || false,
-      SUBSCRIBED_AT: new Date().toISOString()
+      const sub = new Subscription({
+        email: normalizedEmail,
+        type,
+        active: true,
+        source: "site",
+      });
+      await sub.save();
+      return sub;
     };
 
-    await contactsApi.createContact(createContact);
-
-    console.log(`✅ Contact ${email} ajouté aux listes: ${listIds.join(', ')}`);
-
-    res.status(200).json({
-      success: true,
-      message: 'Abonnement réussi ! Vous recevrez bientôt nos actualités.'
-    });
-
-  } catch (error) {
-    console.error('❌ Erreur Brevo lors de l\'abonnement:', error);
-    
-    // Gérer les erreurs spécifiques de Brevo
-    if (error.response) {
-      const errorBody = error.response.body;
-      
-      // Contact déjà existant - considérer comme succès
-      if (errorBody.code === 'duplicate_parameter') {
-        // Mettre à jour le contact existant
-        try {
-          const updateContact = new brevo.UpdateContact();
-          updateContact.listIds = listIds;
-          updateContact.attributes = {
-            NEWSLETTER: newsletter || false,
-            MAILING_LIST: mailingList || false,
-            UPDATED_AT: new Date().toISOString()
-          };
-
-          await contactsApi.updateContact(email, updateContact);
-          
-          console.log(`✅ Contact ${email} mis à jour dans les listes: ${listIds.join(', ')}`);
-          
-          return res.status(200).json({
-            success: true,
-            message: 'Abonnement mis à jour avec succès !'
-          });
-        } catch (updateError) {
-          console.error('❌ Erreur lors de la mise à jour:', updateError);
-        }
-      }
-      
-      return res.status(400).json({
-        success: false,
-        error: errorBody.message || 'Erreur lors de l\'abonnement'
-      });
+    if (newsletter) {
+      await upsertSubscription("newsletter");
+      subscribedTypes.push("newsletter");
     }
-    
-    res.status(500).json({
+
+    if (mailingList) {
+      await upsertSubscription("mailingList");
+      subscribedTypes.push("mailingList");
+    }
+
+    // Construire le texte lisible pour l'email de confirmation
+    const humanTypes = subscribedTypes
+      .map((t) => (t === "newsletter" ? "Newsletter" : "Mailing list"))
+      .join(" et ");
+
+    // Liens de désinscription (un par type sélectionné)
+    const unsubscribeLinks = subscribedTypes
+      .map((t) => {
+        const typeLabel = t === "newsletter" ? "newsletter" : "mailing list";
+        const url = `${FRONTEND_URL.replace(
+          /\/$/,
+          ""
+        )}/unsubscribe?email=${encodeURIComponent(
+          normalizedEmail
+        )}&type=${encodeURIComponent(t)}`;
+        return `<li><a href="${url}" style="color:#667eea;text-decoration:underline;">Se désabonner de la ${typeLabel}</a></li>`;
+      })
+      .join("");
+
+    const htmlContent = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 700;">
+            ${SITE_NAME}
+          </h1>
+          <p style="color: rgba(255,255,255,0.95); margin: 15px 0 0 0; font-size: 18px; font-weight: 500;">
+            Merci pour votre inscription !
+          </p>
+        </div>
+        <div style="background: white; padding: 35px 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+          <p style="color: #4a5568; line-height: 1.8; font-size: 16px; margin: 0 0 24px;">
+            Bonjour,<br/>
+            Votre adresse <strong>${normalizedEmail}</strong> a bien été inscrite à : <strong>${humanTypes}</strong>.
+          </p>
+          <p style="color: #4a5568; line-height: 1.8; font-size: 16px; margin: 0 0 24px;">
+            Vous pourrez recevoir ponctuellement des actualités, annonces ou informations importantes.
+          </p>
+          <p style="color: #a0aec0; font-size: 13px; margin: 24px 0 8px;">
+            Vous pouvez vous désabonner à tout moment :
+          </p>
+          <ul style="margin: 0; padding-left: 20px; color:#4a5568; font-size:14px;">
+            ${unsubscribeLinks}
+          </ul>
+        </div>
+        <div style="text-align: center; padding: 25px 20px;">
+          <p style="color: #a0aec0; font-size: 13px; margin: 0;">
+            © ${new Date().getFullYear()} ${SITE_NAME} - Tous droits réservés
+          </p>
+        </div>
+      </div>
+    `;
+
+    try {
+      await resend.emails.send({
+        from: `${SITE_NAME} <${SENDER_EMAIL}>`,
+        to: normalizedEmail,
+        subject: "Inscription confirmée",
+        html: htmlContent,
+      });
+    } catch (emailError) {
+      console.error("❌ Erreur Resend (newsletter):", emailError);
+      // On ne bloque pas l'inscription si l'email de confirmation échoue
+    }
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Inscription enregistrée avec succès. Vous recevrez bientôt nos actualités.",
+    });
+  } catch (error) {
+    console.error("❌ Erreur lors de l'inscription newsletter/mailing list:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Une erreur est survenue lors de l\'abonnement. Veuillez réessayer dans quelques instants.'
+      error:
+        "Une erreur est survenue lors de l'inscription. Veuillez réessayer dans quelques instants.",
     });
   }
 };
+
+/**
+ * Route de désinscription (appelée depuis le lien dans l'email).
+ * Attend les query params: email, type ("newsletter" ou "mailingList").
+ */
+exports.unsubscribe = async (req, res) => {
+  const { email, type } = req.query;
+
+  if (!email || !type) {
+    return res.status(400).send(
+      "<h1>Paramètres manquants</h1><p>L'email ou le type d'inscription est manquant.</p>"
+    );
+  }
+
+  if (!["newsletter", "mailingList"].includes(type)) {
+    return res
+      .status(400)
+      .send("<h1>Type invalide</h1><p>Type d'inscription inconnu.</p>");
+  }
+
+  try {
+    const normalizedEmail = email.trim().toLowerCase();
+    const sub = await Subscription.findOne({
+      email: normalizedEmail,
+      type,
+      active: true,
+    });
+
+    if (!sub) {
+      return res
+        .status(200)
+        .send(
+          "<h1>Déjà désabonné</h1><p>Aucune inscription active trouvée pour cette adresse.</p>"
+        );
+    }
+
+    sub.active = false;
+    sub.unsubscribedAt = new Date();
+    await sub.save();
+
+    const label =
+      type === "newsletter" ? "la newsletter" : "la mailing list";
+
+    return res
+      .status(200)
+      .send(
+        `<h1>Désabonnement pris en compte</h1><p>Votre adresse a été retirée de ${label}.</p>`
+      );
+  } catch (error) {
+    console.error("❌ Erreur lors de la désinscription:", error);
+    return res
+      .status(500)
+      .send(
+        "<h1>Erreur serveur</h1><p>Une erreur est survenue lors de la désinscription. Veuillez réessayer plus tard.</p>"
+      );
+  }
+};
+
+/**
+ * Liste des abonnés (backoffice).
+ * Optionnel: requête ?type=newsletter ou ?type=mailingList
+ */
+exports.getSubscriptions = async (req, res) => {
+  const { type } = req.query;
+
+  const filter = {};
+  if (type && ["newsletter", "mailingList"].includes(type)) {
+    filter.type = type;
+  }
+
+  try {
+    const subscriptions = await Subscription.find(filter)
+      .sort({ createdAt: -1 })
+      .lean();
+    res.status(200).json({
+      success: true,
+      data: subscriptions,
+    });
+  } catch (error) {
+    console.error("❌ Erreur lors de la récupération des abonnés:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erreur lors de la récupération des abonnés",
+    });
+  }
+};
+

@@ -24,6 +24,7 @@ const newsletterController = require("../controllers/newsletterController");
 const linktreeBlockController = require("../controllers/linktreeBlockController");
 const linktreeProfileController = require("../controllers/linktreeProfileController");
 const analyticsController = require("../controllers/analyticsController");
+const exportController = require("../controllers/exportController");
 
 // ANALYTICS (même structure que back_aurelienallenicfr)
 router.post("/track", analyticsController.trackEvent);
@@ -170,6 +171,9 @@ router.delete("/delete-trash/:id", trashController.permanentlyDeleteItem);
 // FRESH NEWS
 router.get("/fresh-news", freshNewsController.getFreshNews);
 router.post("/fresh-news", freshNewsController.upsertFreshNews);
+
+// EXPORT GLOBAL DE LA BDD (CSV)
+router.get("/export-db", auth, exportController.exportDb);
 
 // PARO CONTACT ROUTE
 router.post("/paro-contact", paroContactController.handleParoContact);

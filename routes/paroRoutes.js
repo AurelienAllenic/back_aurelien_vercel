@@ -182,6 +182,9 @@ router.post("/paro-contact", paroContactController.handleParoContact);
 router.post("/subscribe-newsletter", newsletterController.subscribeNewsletter);
 router.get("/unsubscribe", newsletterController.unsubscribe);
 router.get("/subscriptions", auth, newsletterController.getSubscriptions);
+router.post("/subscriptions", auth, newsletterController.addSubscriber);
+router.delete("/subscriptions/:id", auth, newsletterController.deleteSubscriber);
+router.patch("/subscriptions/:id", auth, newsletterController.setSubscriberActive);
 
 // MESSAGES (backoffice – liste, détail, suppression, décryptés)
 router.get("/messages", auth, messageController.findAllMessages);

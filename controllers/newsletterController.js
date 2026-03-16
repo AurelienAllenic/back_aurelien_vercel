@@ -248,3 +248,156 @@ exports.getSubscriptions = async (req, res) => {
   }
 };
 
+/**
+ * Ajouter un abonné (backoffice, auth).
+ * Body: { email, type? } avec type "newsletter" | "mailingList"
+ *   ou { email, newsletter?, mailingList? } (booléens, au moins un à true)
+ */
+exports.addSubscriber = async (req, res) => {
+  const { email, type, newsletter, mailingList } = req.body;
+
+  if (!email || typeof email !== "string") {
+    return res.status(400).json({
+      success: false,
+      error: "L'adresse email est requise",
+    });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.trim())) {
+    return res.status(400).json({
+      success: false,
+      error: "Format d'email invalide",
+    });
+  }
+
+  const typesToAdd = [];
+  if (type && ["newsletter", "mailingList"].includes(type)) {
+    typesToAdd.push(type);
+  } else {
+    if (newsletter) typesToAdd.push("newsletter");
+    if (mailingList) typesToAdd.push("mailingList");
+  }
+
+  if (typesToAdd.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: "Indiquez au moins un type : type (newsletter | mailingList) ou newsletter / mailingList à true",
+    });
+  }
+
+  try {
+    const normalizedEmail = email.trim().toLowerCase();
+    const created = [];
+
+    for (const t of typesToAdd) {
+      let sub = await Subscription.findOne({
+        email: normalizedEmail,
+        type: t,
+      });
+      if (sub) {
+        sub.active = true;
+        sub.unsubscribedAt = null;
+        sub.subscribedAt = new Date();
+        sub.source = "backoffice";
+        await sub.save();
+        created.push(sub);
+      } else {
+        sub = new Subscription({
+          email: normalizedEmail,
+          type: t,
+          active: true,
+          source: "backoffice",
+        });
+        await sub.save();
+        created.push(sub);
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Abonné(s) ajouté(s) ou réactivé(s)",
+      data: created,
+    });
+  } catch (error) {
+    console.error("❌ Erreur addSubscriber:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Erreur lors de l'ajout de l'abonné",
+    });
+  }
+};
+
+/**
+ * Supprimer un abonné (backoffice, auth).
+ * Param : id = _id du document Subscription
+ */
+exports.deleteSubscriber = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const sub = await Subscription.findByIdAndDelete(id);
+    if (!sub) {
+      return res.status(404).json({
+        success: false,
+        error: "Abonnement introuvable",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Abonnement supprimé",
+    });
+  } catch (error) {
+    console.error("❌ Erreur deleteSubscriber:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Erreur lors de la suppression",
+    });
+  }
+};
+
+/**
+ * Activer ou désactiver un abonné (backoffice, auth).
+ * PATCH /subscriptions/:id
+ * Body: { active: true | false }
+ */
+exports.setSubscriberActive = async (req, res) => {
+  const { id } = req.params;
+  const { active } = req.body;
+
+  if (typeof active !== "boolean") {
+    return res.status(400).json({
+      success: false,
+      error: "Le champ active (true ou false) est requis",
+    });
+  }
+
+  try {
+    const sub = await Subscription.findByIdAndUpdate(
+      id,
+      {
+        active,
+        ...(active ? { unsubscribedAt: null, subscribedAt: new Date() } : { unsubscribedAt: new Date() }),
+      },
+      { new: true, runValidators: true }
+    );
+    if (!sub) {
+      return res.status(404).json({
+        success: false,
+        error: "Abonnement introuvable",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: sub.active ? "Abonné activé" : "Abonné désactivé",
+      data: sub,
+    });
+  } catch (error) {
+    console.error("❌ Erreur setSubscriberActive:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Erreur lors de la mise à jour",
+    });
+  }
+};
+

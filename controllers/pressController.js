@@ -9,10 +9,17 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+/** "section" par défaut si absent ou invalide */
+function normalizePressKind(value) {
+  const v = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (v === "revue") return "revue";
+  return "section";
+}
+
 // **Créer un article de presse avec un ordre**
 exports.createPress = async (req, res) => {
   try {
-    const { link, linkMobile, alt, isActive } = req.body;
+    const { link, linkMobile, alt, isActive, kind } = req.body;
     if (!req.file || !req.file.path) {
       return res.status(400).json({ error: "Aucune image fournie" });
     }
@@ -26,6 +33,7 @@ exports.createPress = async (req, res) => {
       link: link && link.trim() !== "" ? link : null,
       linkMobile: linkMobile && linkMobile.trim() !== "" ? linkMobile.trim() : "",
       alt,
+      kind: normalizePressKind(kind),
       order: newOrder,
       isActive: isActive !== undefined ? (isActive === "true" || isActive === true) : true,
     });
@@ -60,11 +68,14 @@ exports.findAllPress = async (req, res) => {
 // **Mettre à jour un article de presse**
 exports.updatePress = async (req, res) => {
   try {
-    const { link, linkMobile, alt, isActive } = req.body;
+    const { link, linkMobile, alt, isActive, kind } = req.body;
     let updateData = { alt };
     updateData.link = link && link.trim() !== "" ? link : null;
     if (linkMobile !== undefined) {
       updateData.linkMobile = linkMobile && linkMobile.trim() !== "" ? linkMobile.trim() : "";
+    }
+    if (kind !== undefined) {
+      updateData.kind = normalizePressKind(kind);
     }
     if (isActive !== undefined) {
       updateData.isActive = isActive === "true" || isActive === true;

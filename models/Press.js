@@ -5,6 +5,12 @@ const PressSchema = new mongoose.Schema({
   link: { type: String, default: "" },
   linkMobile: { type: String, default: "" }, // optionnel : version mobile du lien
   alt: { type: String, required: true },
+  /** Affichage : section (par défaut) ou revue */
+  kind: {
+    type: String,
+    enum: ["section", "revue"],
+    default: "section",
+  },
   order: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
 });
